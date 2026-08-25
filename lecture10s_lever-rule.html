@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="lecture-number" content="10s">
+<meta name="lecture-title" content="The Lever Rule">
+<meta name="lecture-topic" content="Phase fractions in a two-phase field of a binary phase diagram">
+<title>The Lever Rule (Lecture 10s)</title>
+<style>
+  :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate);font-family:Calibri,'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 40px;}
+  h1{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:25px;margin:2px 0 2px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 14px;}
+  .stage{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:18px;flex-wrap:wrap;}
+  .canvaswrap{flex:1 1 500px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .panel{flex:1 1 355px;min-width:305px;display:flex;flex-direction:column;}
+  .step{font-size:12.5px;font-weight:bold;letter-spacing:1px;color:var(--purp);text-transform:uppercase;margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 17px;flex:1;}
+  .card h3{margin:0 0 8px;font-family:Cambria,serif;font-size:18px;color:var(--navy);}
+  .card p{font-size:14.5px;margin:0 0 10px;}
+  .eq{font-family:Cambria,serif;font-size:17px;color:var(--navy);background:var(--light);border-radius:6px;padding:9px 13px;display:block;margin:2px 0 10px;font-weight:bold;text-align:center;}
+  .defs{margin:4px 0 10px;padding:0;list-style:none;}
+  .defs li{font-size:13.8px;color:var(--slate);margin:5px 0;line-height:1.5;padding-left:15px;position:relative;}
+  .defs li::before{content:"•";position:absolute;left:2px;color:var(--purp);}
+  .defs b{color:var(--navy);font-family:Cambria,serif;}
+  .given{background:var(--light);border-radius:8px;padding:10px 14px;margin:6px 0 6px;font-size:13.8px;line-height:1.7;}
+  .given b{color:var(--navy);font-family:Cambria,serif;}
+  .footnote{font-size:12px;color:var(--mut);margin:2px 0 8px;line-height:1.45;}
+  .solution{margin-top:9px;font-size:13.5px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+  .exwork{background:var(--light);border-radius:8px;padding:10px 13px;margin:4px 0 8px;font-size:14px;line-height:1.85;font-family:Cambria,serif;min-height:30px;}
+  .exwork b{color:var(--navy);}
+  .answer-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  input[type=number]{font-family:Cambria;font-size:17px;width:110px;padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;}
+  .unit{color:var(--slate);font-size:15px;font-family:Cambria,serif;}
+  button{font-family:Calibri;font-size:14.5px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--navy);}
+  button:disabled{opacity:.4;cursor:default;}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:13px;}
+  .feedback{margin-top:11px;font-size:13.5px;line-height:1.55;border-radius:8px;padding:10px 13px;display:none;}
+  .feedback.ok{display:block;background:#E8F3EC;border:1px solid var(--green);color:#1c4c31;}
+  .feedback.no{display:block;background:#FBECE9;border:1px solid var(--terra);color:#7a2e22;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.on{background:var(--navy);}
+  .legend{font-size:13px;color:var(--mut);margin-top:8px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  b.term{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The lever rule: how much of each phase</h1>
+  <p class="sub">In a two-phase field the liquid and solid have different compositions. The lever rule tells you how much of each is present.</p>
+
+  <div class="stage">
+    <div class="canvaswrap">
+      <canvas id="cv" width="720" height="440" role="img" aria-label="Copper–nickel phase diagram with a tie line and lever-rule construction."></canvas>
+      <div class="legend" id="capt" aria-live="polite">The copper–nickel phase diagram: liquid on top, solid α on the bottom, a two-phase lens between.</div>
+    </div>
+    <div class="panel">
+      <div class="step" id="stepLabel">Step 1 of 7</div>
+      <div class="card" id="card"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+  <p class="legend" style="margin-top:12px"><b class="term">Why it matters:</b> the lever rule turns a phase diagram into a recipe — how much solid has formed at a given temperature during casting, and therefore how a part solidifies.</p>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49',ice:'#D9E1F2'};
+const TAU=2*Math.PI;
+
+// Cu-Ni isomorphous. Liquidus & solidus control points (wt% Ni, T degC).
+// Tie-line ends used below lie exactly on control points (worked 1360C: 50<->58, student 1300C: 32<->42).
+const LIQ=[[0,1085],[26,1250],[32,1300],[50,1360],[75,1412],[100,1455]];
+const SOL=[[0,1085],[36,1250],[42,1300],[58,1360],[80,1415],[100,1455]];
+// fill in len, WL, Wa from the compositions so nothing can silently desync (F3)
+function lever(P){ P.len=P.Ca-P.CL; P.WL=(P.Ca-P.C0)/P.len; P.Wa=(P.C0-P.CL)/P.len; return P; }
+const EX =lever({T:1360, C0:52, CL:50, Ca:58});  // worked example: Cu-52 Ni, length 8
+const STU=lever({T:1300, C0:35, CL:32, Ca:42});  // student problem: Cu-35 Ni, length 10
+const PAY=lever({T:1280, C0:35, CL:29.6, Ca:39.6}); // payoff comparison (on cooling): ~54% solid
+
+// ---- module-level state (persists across re-renders) ----
+let stage=0, exIdx=0;                 // exIdx: worked-example click-through (0..3)
+let answers={R:'',L:'',A:''};
+let feedback={R:null,L:null,A:null};
+let attempts={R:0,L:0,A:0};
+let revealed={R:false,L:false,A:false};
+let solved={R:false,L:false,A:false};
+const solText={
+ R:'Drop the <b>left</b> (liquidus) end of the tie line straight down to the axis: it sits at <b>32 wt% Ni</b>. (The right, solidus end reads C<sub>&alpha;</sub> = 42 the same way.)',
+ L:'W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>)/(C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (42 &minus; 35)/(42 &minus; 32) = 7/10 = <b>0.70</b>. (far arm &divide; whole tie line)',
+ A:'W<sub>&alpha;</sub> = (C<sub>0</sub> &minus; C<sub>L</sub>)/(C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (35 &minus; 32)/10 = 3/10 = <b>0.30</b>. (near arm &divide; length, or 1 &minus; W<sub>L</sub>)'
+};
+const stageKey=st=>({3:'R',4:'L',5:'A'})[st]||null;
+
+const GIVEN=`<div class="given"><b>Given &mdash; the alloy:</b>
+<ul class="defs" style="margin:7px 0 0">
+  <li><b>C<sub>0</sub></b> &mdash; overall alloy composition = 35 wt% Ni</li>
+  <li><b>C<sub>L</sub></b> &mdash; composition of the <b>liquid</b> (liquidus end of the tie line) &mdash; you'll read it off the diagram</li>
+  <li><b>C<sub>&alpha;</sub></b> &mdash; composition of the <b>solid &alpha;</b> (solidus end) &mdash; also read off the diagram</li>
+  <li><b>W<sub>L</sub>, W<sub>&alpha;</sub></b> &mdash; the mass fractions of liquid and solid we solve for (each between 0 and 1)</li>
+</ul></div>
+<div class="footnote"><i>Beyond our scope:</i> the lever rule assumes <b>equilibrium</b> (slow cooling). Real castings cool too fast and &ldquo;core,&rdquo; leaving a composition gradient across each grain.</div>`;
+
+const stages=[
+ {html:`<h3>Two phases, two compositions</h3>
+   <p>Cool a copper–nickel alloy and there is a temperature range where <b>liquid and solid coexist</b> — the lens-shaped (&alpha;&nbsp;+&nbsp;L) field on the diagram. The two phases do <b>not</b> have the same composition: the solid is richer in nickel than the liquid.</p>
+   <ul class="defs"><li>At a chosen temperature, a horizontal <b>tie line</b> across the lens meets the liquidus and solidus — those two intersections give the two phase compositions.</li></ul>
+   <p>The question the <b>lever rule</b> answers: how much of the alloy is liquid, and how much is solid?</p>`},
+ {html:`<h3>The tie line and the lever rule</h3>
+   <p>Think of the tie line as a seesaw balanced at the overall composition C<sub>0</sub>. Each phase's fraction is the length of the <b>opposite</b> arm, divided by the whole tie line:</p>
+   <div class="eq">W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>) / (C<sub>&alpha;</sub> &minus; C<sub>L</sub>)&nbsp;&nbsp;·&nbsp;&nbsp;W<sub>&alpha;</sub> = (C<sub>0</sub> &minus; C<sub>L</sub>) / (C<sub>&alpha;</sub> &minus; C<sub>L</sub>)</div>
+   ${GIVEN}
+   <ul class="defs"><li><b>The trap:</b> the fraction of <b>liquid</b> uses the arm on the <b>solid</b> side (C<sub>&alpha;</sub> &minus; C<sub>0</sub>) — the <b>far</b> arm, not the near one.</li></ul>`},
+ {html:`<h3>Worked example first — Cu&ndash;52 wt% Ni at 1360&nbsp;&deg;C</h3>
+   <p>Before your alloy, watch the method on a different point of the same diagram (tie line drawn at left: C<sub>L</sub>&nbsp;=&nbsp;50, C<sub>&alpha;</sub>&nbsp;=&nbsp;58, C<sub>0</sub>&nbsp;=&nbsp;52). Reveal one step at a time:</p>
+   <div class="exwork" id="exWork" aria-live="polite"></div>
+   <div class="nav" style="justify-content:flex-start"><button id="exNext">Reveal next step ▸</button><button class="ghost" id="exReset" aria-label="Reset the worked example">Reset</button></div>
+   <p class="footnote">Different alloy, different tie-line length (8, not 10) — just to show the recipe. You'll do your own alloy next.</p>`},
+ {html:`<h3>Your turn — read the tie line off the diagram</h3>
+   <p>Your alloy is Cu&ndash;35 wt% Ni. At <b>1300&nbsp;&deg;C</b> the tie line is drawn across the lens (left), its ends marked on the liquidus and solidus with drop-lines to the axis.</p>
+   <p>Read the <b>liquid</b> composition — the <b>left</b> (liquidus) end — off the composition axis:</p>
+   <label class="sr-only" for="ansR">Liquid composition C_L, in weight percent nickel</label>
+   <div class="answer-row"><span class="unit">C<sub>L</sub> =</span><input type="number" id="ansR" step="1" min="0" max="100" placeholder="?"> <span class="unit">wt% Ni</span><button id="checkR">Check</button></div>
+   <div class="feedback" id="fbR" aria-live="polite"></div>
+   <div id="hintR"></div>`},
+ {html:`<h3>Your turn — fraction of liquid W<sub>L</sub></h3>
+   <p>You read C<sub>L</sub> = 32; the solidus end reads C<sub>&alpha;</sub> = 42. With C<sub>0</sub> = 35, use the <b>far</b> arm.</p>
+   <div class="eq">W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>) / (C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (42 &minus; 35) / (42 &minus; 32)</div>
+   <label class="sr-only" for="ansL">Fraction of liquid W_L, a number between 0 and 1</label>
+   <div class="answer-row"><span class="unit">W<sub>L</sub> =</span><input type="number" id="ansL" step="0.05" min="0" max="1" placeholder="?"><button id="checkL">Check</button></div>
+   <div class="feedback" id="fbL" aria-live="polite"></div>
+   <div id="hintL"></div>`},
+ {html:`<h3>Your turn — fraction of solid W<sub>&alpha;</sub></h3>
+   <p>Same tie line, the <b>near</b> arm this time (or just 1 &minus; W<sub>L</sub>).</p>
+   <div class="eq">W<sub>&alpha;</sub> = (C<sub>0</sub> &minus; C<sub>L</sub>) / (C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (35 &minus; 32) / 10</div>
+   <label class="sr-only" for="ansA">Fraction of solid alpha W_alpha, a number between 0 and 1</label>
+   <div class="answer-row"><span class="unit">W<sub>&alpha;</sub> =</span><input type="number" id="ansA" step="0.05" min="0" max="1" placeholder="?"><button id="checkA">Check</button></div>
+   <div class="feedback" id="fbA" aria-live="polite"></div>
+   <div id="hintA"></div>`},
+ {html:`<h3>What the numbers mean</h3>
+   <ul class="defs">
+     <li>At 1300&nbsp;&deg;C the Cu&ndash;35 Ni alloy is <b>70% liquid, 30% solid</b> by mass (W<sub>L</sub> + W<sub>&alpha;</sub> = 1).</li>
+     <li>Cool further and C<sub>0</sub> stays put, but the tie line shifts: the solid arm grows, so <b>more solidifies</b> (the faint lower tie line shows ~54% solid at 1280&nbsp;&deg;C). At the solidus the alloy is fully solid.</li>
+     <li>Scaling in words: a phase's fraction is proportional to the length of the <b>opposite</b> lever arm.</li>
+   </ul>
+   <p>This is exactly how you read out how far solidification has progressed at any temperature during a casting.</p>`}
+];
+
+// ---------- canvas (fixed 720 x 440 design space; Pattern A) ----------
+const CW=720, CH=440, PL=60, PR=26, PT=34, PB=54;
+const Cmin=0, Cmax=100, Tmin=1050, Tmax=1500;
+const px=C=>PL+((C-Cmin)/(Cmax-Cmin))*(CW-PL-PR);
+const py=T=>PT+((Tmax-T)/(Tmax-Tmin))*(CH-PT-PB);
+function poly(pts){ ctx.beginPath(); pts.forEach((p,i)=>{ const X=px(p[0]),Y=py(p[1]); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }); }
+
+function drawDiagram(){
+ ctx.fillStyle=CSS.mut; ctx.font='15px Calibri'; ctx.textAlign='center';
+ ctx.fillText('copper–nickel phase diagram',CW/2,22);
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,CH-PB); ctx.lineTo(CW-PR,CH-PB); ctx.stroke();
+ ctx.font='12.5px Calibri'; ctx.fillStyle=CSS.mut;
+ ctx.textAlign='right'; for(let T=1100;T<=1450;T+=100){ const y=py(T); ctx.fillText(T,PL-7,y+4); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(CW-PR,y); ctx.stroke(); }
+ ctx.textAlign='center'; for(let C=0;C<=100;C+=20){ ctx.fillText(C,px(C),CH-PB+18); }
+ ctx.fillStyle=CSS.slate; ctx.font='14px Calibri'; ctx.fillText('composition  (wt% Ni)',CW/2,CH-8);
+ ctx.save(); ctx.translate(15,(PT+CH-PB)/2); ctx.rotate(-Math.PI/2); ctx.fillText('temperature  (°C)',0,0); ctx.restore();
+ ctx.fillStyle=CSS.ice; ctx.globalAlpha=.5; poly(LIQ.concat(SOL.slice().reverse())); ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+ ctx.strokeStyle=CSS.steel; ctx.lineWidth=2.6; poly(LIQ); ctx.stroke();
+ ctx.strokeStyle=CSS.teal; ctx.lineWidth=2.6; poly(SOL); ctx.stroke();
+ ctx.font='bold 15px Cambria'; ctx.textAlign='center';
+ ctx.fillStyle=CSS.steel; ctx.fillText('L (liquid)',px(12),py(1430));
+ ctx.fillStyle=CSS.navy;  ctx.fillText('α + L',px(45),py(1330));
+ ctx.fillStyle=CSS.teal;  ctx.fillText('α (solid)',px(72),py(1140));
+ ctx.font='12px Calibri'; ctx.fillStyle=CSS.mut; ctx.textAlign='left';
+ ctx.fillText('liquidus',px(60)+4,py(1372)); ctx.fillText('solidus',px(66)+4,py(1352));
+}
+
+// tie line + lever. opt controls what is shown; off overrides label offsets (defaults below).
+function tieLine(P, opt, off){
+ const o=Object.assign({cl:-9,ca:-9,c0:26,far:-24,near:40,wl:-2,wa:16}, off||{});
+ const yT=py(P.T), xL=px(P.CL), xA=px(P.Ca), x0=px(P.C0);
+ // alloy vertical line
+ ctx.strokeStyle=CSS.mut; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(x0,PT); ctx.lineTo(x0,CH-PB); ctx.stroke(); ctx.setLineDash([]);
+ // drop-lines from the ends to the axis (read-off aid)
+ if(opt.dropLines){ ctx.strokeStyle=CSS.line; ctx.lineWidth=1.4; ctx.setLineDash([4,3]);
+   [xL,xA].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,yT); ctx.lineTo(x,CH-PB); ctx.stroke(); }); ctx.setLineDash([]); }
+ // tie beam
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=2.4; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(xA,yT); ctx.stroke();
+ // endpoints
+ ctx.fillStyle=CSS.steel; ctx.beginPath(); ctx.arc(xL,yT,5,0,TAU); ctx.fill();
+ ctx.fillStyle=CSS.teal;  ctx.beginPath(); ctx.arc(xA,yT,5,0,TAU); ctx.fill();
+ // fulcrum triangle at C0 (always drawn)
+ ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.moveTo(x0,yT); ctx.lineTo(x0-7,yT+12); ctx.lineTo(x0+7,yT+12); ctx.closePath(); ctx.fill();
+ // endpoint value labels (hidden while the student is reading them off)
+ ctx.font='bold 12.5px Calibri'; ctx.textAlign='center';
+ if(!opt.hideEnds){ ctx.fillStyle=CSS.steel; ctx.fillText('C_L='+P.CL,xL,yT+o.cl);
+   ctx.fillStyle=CSS.teal; ctx.fillText('C_α='+P.Ca,xA,yT+o.ca); }
+ if(!opt.hideC0){ ctx.fillStyle=CSS.terra; ctx.fillText('C₀='+P.C0,x0,yT+o.c0); }
+ // far arm (C0 -> Ca) for W_L
+ if(opt.far){ ctx.strokeStyle=CSS.amber; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(x0,yT); ctx.lineTo(xA,yT); ctx.stroke();
+   ctx.fillStyle=CSS.amber; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText('far arm = '+(P.Ca-P.C0),(x0+xA)/2,yT+o.far); }
+ // near arm (CL -> C0) for W_alpha
+ if(opt.near){ ctx.strokeStyle=CSS.purp; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(x0,yT); ctx.stroke();
+   ctx.fillStyle=CSS.purp; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText('near arm = '+(P.C0-P.CL),(xL+x0)/2,yT+o.near); }
+ // result labels
+ ctx.font='bold 14px Calibri'; ctx.textAlign='left';
+ if(opt.showWL){ ctx.fillStyle=CSS.amber; ctx.fillText('W_L = '+P.WL.toFixed(2),xA+12,yT+o.wl); }
+ if(opt.showWa){ ctx.fillStyle=CSS.purp;  ctx.fillText('W_α = '+P.Wa.toFixed(2),xA+12,yT+o.wa); }
+}
+
+function draw(){
+ const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||CW;
+ cv.width=cssW*dpr; cv.height=cssW*(CH/CW)*dpr; ctx.setTransform((cssW/CW)*dpr,0,0,(cssW/CW)*dpr,0,0);
+ ctx.clearRect(0,0,CW,CH);
+ drawDiagram();
+ const showL=solved.L||revealed.L, showA=solved.A||revealed.A, showR=solved.R||revealed.R;
+ if(stage===2){
+   tieLine(EX,{far:exIdx>=2, near:exIdx>=3, showWL:exIdx>=2, showWa:exIdx>=3});
+ } else if(stage===3){
+   // read-off: ends unlabeled (with drop-lines) until the student reads C_L
+   tieLine(STU,{hideEnds:!showR, dropLines:true});
+ } else if(stage===4 || stage===5){
+   tieLine(STU,{far:showL, near:showA, showWL:showL, showWa:showA},{far:-40});
+ } else if(stage===6){
+   // payoff: faint lower tie line shows more solid on cooling
+   const yT=py(PAY.T),xL=px(PAY.CL),xA=px(PAY.Ca);
+   ctx.globalAlpha=.45; ctx.strokeStyle=CSS.purp; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(xA,yT); ctx.stroke();
+   ctx.fillStyle=CSS.purp; ctx.font='12px Calibri'; ctx.textAlign='left'; ctx.fillText('1280°C → ~'+Math.round(PAY.Wa*100)+'% solid',xA+8,yT+4); ctx.globalAlpha=1;
+   // final picture: keep the far arm, drop the near-arm and C0 labels
+   tieLine(STU,{far:true, near:false, showWL:true, showWa:true, hideC0:true},{far:-40});
+ } else {
+   const x0=px(STU.C0); ctx.strokeStyle=CSS.mut; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(x0,PT); ctx.lineTo(x0,CH-PB); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.terra; ctx.font='bold 12.5px Calibri'; ctx.textAlign='center'; ctx.fillText('alloy C₀ = 35',x0,PT-4);
+ }
+ updateCaption();
+}
+function updateCaption(){
+ // F6: drive #capt only (aria-live); the canvas keeps its static aria-label.
+ const capt=document.getElementById('capt'); if(!capt) return;
+ capt.innerHTML=[
+  'The Cu–Ni phase diagram: liquid L on top, solid α on the bottom, a two-phase lens between.',
+  'The lever rule balances the tie line at C₀; each phase gets the opposite arm.',
+  'Worked example: the 1360 °C tie line for a Cu–52 Ni alloy; arms reveal as you step through.',
+  'Your alloy at 1300 °C: read the tie-line ends off the composition axis (drop-lines shown).',
+  'The far arm (C_α − C₀) gives the fraction of liquid W_L.',
+  'The near arm (C₀ − C_L) gives the fraction of solid W_α (so W_L + W_α = 1).',
+  'The solved 1300 °C tie line (70% liquid, 30% solid), with a lower tie line showing more solid on cooling.'
+ ][stage];
+}
+
+// ---------- worked-example click-through (F4: EX length 8, recomputed) ----------
+const exSteps=[
+ 'Tie-line length = C_α − C_L = 58 − 50 = <b>8 wt%</b>.',
+ 'Far arm (toward the solid) = C_α − C₀ = 58 − 52 = 6, so W<sub>L</sub> = 6/8 = <b>0.75</b>.',
+ 'Near arm (toward the liquid) = C₀ − C_L = 52 − 50 = 2, so W<sub>α</sub> = 2/8 = <b>0.25</b>. Check: 0.75 + 0.25 = 1. ✓'
+];
+function updateExWork(){
+ const el=document.getElementById('exWork'); if(!el) return;
+ if(exIdx===0){ el.innerHTML='<span style="color:var(--mut)">Click “Reveal next step ▸” to begin.</span>'; return; }
+ let s=''; for(let i=0;i<exIdx;i++) s+='<div>'+exSteps[i]+'</div>'; el.innerHTML=s;
+}
+
+// ---------- render / state ----------
+function render(){
+ document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
+ document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
+ const gated=(stage===2 && exIdx<exSteps.length) || (key!==null && !(solved[key]||revealed[key]));
+ let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
+ if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
+ else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
+ nav+=`</div>`;
+ document.getElementById('card').insertAdjacentHTML('beforeend',nav);
+ let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
+ document.getElementById('dots').innerHTML=dh;
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; exIdx=0; answers={R:'',L:'',A:''}; feedback={R:null,L:null,A:null}; attempts={R:0,L:0,A:0}; revealed={R:false,L:false,A:false}; solved={R:false,L:false,A:false}; render(); };
+ wire('checkR',checkR); wire('checkL',checkL); wire('checkA',checkA);
+ const en=document.getElementById('exNext'); if(en) en.onclick=()=>{ if(exIdx<exSteps.length){ exIdx++; updateExWork(); if(exIdx>=exSteps.length){ const nx=document.getElementById('next'); if(nx) nx.disabled=false; } draw(); } };
+ const er=document.getElementById('exReset'); if(er) er.onclick=()=>{ exIdx=0; updateExWork(); const nx=document.getElementById('next'); if(nx) nx.disabled=true; draw(); };
+ if(stage===2) updateExWork();
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({R:checkR,L:checkL,A:checkA})[key](); } }; }
+   applyStepState(key);
+ }
+ draw();
+}
+function wire(id,fn){ const b=document.getElementById(id); if(b) b.onclick=fn; }
+function updateNext(){ const key=stageKey(stage); const nx=document.getElementById('next'); if(!nx||!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){ hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>'; const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); draw(); }; }
+   else hint.innerHTML='';
+ }
+ updateNext();
+}
+const near=(v,t,tol)=>Math.abs(v-t)<tol;
+
+// target 32 | distractors 35 (read C0), 42 (read C_alpha/solidus), >100 (read temperature) | nearest gap 3 -> tol 1
+function checkR(){ const raw=document.getElementById('ansR').value; answers.R=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.R={cls:'no',html:'Enter a composition in wt% Ni.'}; applyStepState('R'); return; }
+ if(near(v,32,1)){ solved.R=true; feedback.R={cls:'ok',html:'✓ Correct — the liquidus end sits at <b>32 wt% Ni</b>. (The solidus end reads C<sub>α</sub> = 42.) Click Next.'}; }
+ else { attempts.R++;
+   if(near(v,35,1)) feedback.R={cls:'no',html:'That is C₀, the overall alloy. C<sub>L</sub> is the <b>left</b> end of the tie line (on the liquidus).'};
+   else if(near(v,42,1)) feedback.R={cls:'no',html:'That is C<sub>α</sub>, the <b>solidus</b> (right) end — the solid composition. C<sub>L</sub> is the left (liquid) end.'};
+   else if(v>100) feedback.R={cls:'no',html:'Read the <b>composition</b> (horizontal axis, wt% Ni), not the temperature.'};
+   else feedback.R={cls:'no',html:'Not quite. Read the left (liquidus) end of the tie line off the axis ≈ 32 wt% Ni.'};
+ }
+ applyStepState('R'); draw(); }
+
+// target 0.70 | distractors 0.30 (near arm), 0.43 (near/far instead of far/total), 0.50 (midpoint), >1.5 (not normalized) | nearest gap 0.20 -> tol 0.03
+function checkL(){ const raw=document.getElementById('ansL').value; answers.L=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.L={cls:'no',html:'Enter a number between 0 and 1.'}; applyStepState('L'); return; }
+ if(near(v,0.70,0.03)){ solved.L=true; feedback.L={cls:'ok',html:'✓ Correct — (42 − 35)/10 = <b>0.70</b>: the alloy is 70% liquid. Click Next.'}; }
+ else { attempts.L++;
+   if(near(v,0.30,0.03)) feedback.L={cls:'no',html:'That is the <b>near</b> arm. The fraction of <b>liquid</b> uses the <b>far</b> (solid-side) arm: (C<sub>α</sub> − C₀) = 42 − 35.'};
+   else if(near(v,0.43,0.03)) feedback.L={cls:'no',html:'You divided one arm by the <b>other</b> arm. The denominator is the <b>whole tie line</b> C<sub>α</sub> − C<sub>L</sub> = 10, not the near arm: 7/10, not 3/7.'};
+   else if(near(v,0.50,0.03)) feedback.L={cls:'no',html:'C₀ is not at the midpoint of the tie line. Use (C<sub>α</sub> − C₀)/(C<sub>α</sub> − C<sub>L</sub>) = 7/10.'};
+   else if(v>1.5) feedback.L={cls:'no',html:'Give a <b>fraction</b> (0–1): divide the arm by the tie-line length 10. (7/10 = 0.70, not 7 or 70.)'};
+   else feedback.L={cls:'no',html:'Not quite. W<sub>L</sub> = (42 − 35)/(42 − 32) = 7/10 = 0.70.'};
+ }
+ applyStepState('L'); draw(); }
+
+// target 0.30 | distractors 0.70 (far arm), >1.5 (not normalized) | nearest gap 0.40 -> tol 0.03
+function checkA(){ const raw=document.getElementById('ansA').value; answers.A=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.A={cls:'no',html:'Enter a number between 0 and 1.'}; applyStepState('A'); return; }
+ if(near(v,0.30,0.03)){ solved.A=true; feedback.A={cls:'ok',html:'✓ Correct — (35 − 32)/10 = <b>0.30</b>: 30% solid. And 0.70 + 0.30 = 1. Click Next.'}; }
+ else { attempts.A++;
+   if(near(v,0.70,0.03)) feedback.A={cls:'no',html:'That is W<sub>L</sub> (the far arm). The fraction of <b>solid</b> uses the <b>near</b> arm: (C₀ − C<sub>L</sub>) = 35 − 32.'};
+   else if(v>1.5) feedback.A={cls:'no',html:'Give a <b>fraction</b> (0–1): divide the arm by the tie-line length 10. (3/10 = 0.30.)'};
+   else feedback.A={cls:'no',html:'Not quite. W<sub>α</sub> = (35 − 32)/10 = 0.30 (or 1 − 0.70).'};
+ }
+ applyStepState('A'); draw(); }
+
+window.addEventListener('resize',draw);
+render();
+</script>
+</body>
+</html>
