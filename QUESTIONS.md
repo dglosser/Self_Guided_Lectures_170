@@ -72,7 +72,22 @@ holds either way and is enforced in the generated output.
 line ("Supplemental self-guided lectures and problems") is lifted from your
 README's own description. Both are single constants near the top of the file.
 
-**11. Default branch assumed to be `main`.**
+**11. (2026-08-25, revised) The filename fallback was widened to match how you
+actually name files.**
+
+The brief specified `L##_slug.html`. In practice the files are named
+`lecture 2s bond-energy-solver.html` and `lecture3s_density-solver.html`, so the
+fallback never fired and both landed in Unfiled until meta tags were added by
+hand. The pattern now accepts `L`, `lec`, `lect`, or `lecture` (any case),
+followed by digits, an optional letter suffix, and an optional slug, with `_`,
+`-`, a space, or nothing as the separator.
+
+The guard: *something* has to say "lecture" before the digits. Without that,
+any filename containing a number would be swept in. Verified non-matches:
+`Lattice_notes`, `lecture-notes`, `notes_lecture3`, `2s_density`,
+`lecturer-bio`. Meta tags still take precedence over all of it.
+
+**12. Default branch assumed to be `main`.**
 
 The workflow triggers on pushes to `main`, which matches this repo. If that ever
 changes, edit the `branches:` line in `.github/workflows/build-index.yml`.

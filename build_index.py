@@ -66,9 +66,17 @@ EXCLUDED_DIRS = {
 # Files never treated as a lecture (matched case-insensitively).
 EXCLUDED_FILES = {OUTPUT_NAME.lower()}
 
-# L07_slug.html / L7a-slug.html / L07.html
+# Filename fallback. All of these parse:
+#   L07_phase-diagrams.html          -> 7,  "Phase Diagrams"
+#   L07a-phase-diagrams.html         -> 7a
+#   lecture3s_density-solver.html    -> 3s, "Density Solver"
+#   lecture 2s bond-energy-solver    -> 2s
+#   Lecture-12.html                  -> 12
+# The prefix word is optional in form but required in kind: something has to
+# say "lecture" before the digits, or every file with a number in its name
+# would be swept in.
 FILENAME_PATTERN = re.compile(
-    r"^L\s*(\d{1,3})\s*([A-Za-z]?)\s*(?:[_\-\s]+(?P<slug>.*))?$",
+    r"^(?:lecture|lect|lec|L)[_\-\s]*(\d{1,3})\s*([A-Za-z]?)\s*(?:[_\-\s]+(?P<slug>.*))?$",
     re.IGNORECASE,
 )
 
@@ -232,8 +240,9 @@ def build_lecture(repo_root: str, relpath: str, warnings: list[str]) -> Lecture:
             )
         else:
             warnings.append(
-                f"{relpath}: no lecture-number meta tag and filename does not match "
-                f"L##_slug.html -- filed as Unfiled"
+                f"{relpath}: no lecture-number meta tag, and the filename does not "
+                f"carry a number (expected something like lecture7_slug.html or "
+                f"L07_slug.html) -- filed as Unfiled"
             )
 
     # ---- title ------------------------------------------------------------

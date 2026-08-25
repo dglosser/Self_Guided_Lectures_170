@@ -11,7 +11,8 @@ Action reruns it on every push.
 ## Adding a lecture
 
 1. Copy `template/lecture-template.html` to a new file in the repo root.
-2. Name it `L##_slug.html` — e.g. `L07_phase-diagrams.html`.
+2. Name it so the filename carries the number — `lecture7_phase-diagrams.html`
+   or `L07_phase-diagrams.html`, either works.
 3. Fill in the three meta tags at the top of the `<head>`.
 4. Commit and push. The index rebuilds itself.
 
@@ -32,12 +33,24 @@ of precedence:
 `7a`). `lecture-topic` is optional — it becomes the one-line description under
 the link. Leave it out and the entry is just number + title.
 
-**Fallback — the filename**, matching `L##_slug.html`:
+**Fallback — the filename.** The pattern is *(the word "lecture" in some form)*
++ *number* + *optional letter* + *optional slug*. All of these work:
 
-`L07_phase-diagrams.html` → lecture 7, title "Phase Diagrams".
-`L07a_phase-diagrams.html` → lecture 7a.
-The slug becomes the title with hyphens/underscores turned into spaces and
-title-cased.
+```
+L07_phase-diagrams.html          -> 7,  "Phase Diagrams"
+L07a_phase-diagrams.html         -> 7a
+lecture3s_density-solver.html    -> 3s, "Density Solver"
+lecture 2s bond-energy-solver.html -> 2s, "Bond Energy Solver"
+Lecture-12.html                  -> 12
+```
+
+`L`, `lec`, `lect`, and `lecture` are all accepted, case-insensitively, and the
+separator can be `_`, `-`, a space, or nothing. The slug becomes the title with
+hyphens and underscores turned into spaces and title-cased.
+
+Something has to say "lecture" before the digits — otherwise every file with a
+number in its name would get swept into the index. `Lattice_notes.html` and
+`lecture-notes.html` both correctly fail to match and go to Unfiled.
 
 **Title fallback order:** `lecture-title` meta → `<title>` → filename slug.
 
