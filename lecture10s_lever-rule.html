@@ -197,21 +197,23 @@ function tieLine(P, opt, off){
  ctx.fillStyle=CSS.teal;  ctx.beginPath(); ctx.arc(xA,yT,5,0,TAU); ctx.fill();
  // fulcrum triangle at C0 (always drawn)
  ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.moveTo(x0,yT); ctx.lineTo(x0-7,yT+12); ctx.lineTo(x0+7,yT+12); ctx.closePath(); ctx.fill();
- // endpoint value labels (hidden while the student is reading them off)
- ctx.font='bold 12.5px Calibri'; ctx.textAlign='center';
- if(!opt.hideEnds){ ctx.fillStyle=CSS.steel; ctx.fillText('C_L='+P.CL,xL,yT+o.cl);
-   ctx.fillStyle=CSS.teal; ctx.fillText('C_α='+P.Ca,xA,yT+o.ca); }
- if(!opt.hideC0){ ctx.fillStyle=CSS.terra; ctx.fillText('C₀='+P.C0,x0,yT+o.c0); }
- // far arm (C0 -> Ca) for W_L
- if(opt.far){ ctx.strokeStyle=CSS.amber; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(x0,yT); ctx.lineTo(xA,yT); ctx.stroke();
-   ctx.fillStyle=CSS.amber; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText('far arm = '+(P.Ca-P.C0),(x0+xA)/2,yT+o.far); }
- // near arm (CL -> C0) for W_alpha
- if(opt.near){ ctx.strokeStyle=CSS.purp; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(x0,yT); ctx.stroke();
-   ctx.fillStyle=CSS.purp; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText('near arm = '+(P.C0-P.CL),(xL+x0)/2,yT+o.near); }
- // result labels
+ // arm highlights (colored; NO text on the beam — labels are pushed to the sides)
+ if(opt.far){ ctx.strokeStyle=CSS.amber; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(x0,yT); ctx.lineTo(xA,yT); ctx.stroke(); }
+ if(opt.near){ ctx.strokeStyle=CSS.purp; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(x0,yT); ctx.stroke(); }
+ // redraw the endpoint dots on top of the arm highlights
+ ctx.fillStyle=CSS.steel; ctx.beginPath(); ctx.arc(xL,yT,5,0,TAU); ctx.fill();
+ ctx.fillStyle=CSS.teal;  ctx.beginPath(); ctx.arc(xA,yT,5,0,TAU); ctx.fill();
+ // value labels pushed OUT of the lens into the empty regions:
+ //   C_L into the liquid (L) region on the left; C_α and the W results into the solid (α) region on the right.
+ ctx.font='bold 12.5px Calibri';
+ if(!opt.hideEnds){
+   ctx.textAlign='right'; ctx.fillStyle=CSS.steel; ctx.fillText('C_L = '+P.CL, xL-10, yT+4);
+   ctx.textAlign='left';  ctx.fillStyle=CSS.teal;  ctx.fillText('C_α = '+P.Ca, xA+10, yT+4);
+ }
+ if(!opt.hideC0){ ctx.textAlign='center'; ctx.fillStyle=CSS.terra; ctx.fillText('C₀ = '+P.C0, x0, yT+30); }
  ctx.font='bold 14px Calibri'; ctx.textAlign='left';
- if(opt.showWL){ ctx.fillStyle=CSS.amber; ctx.fillText('W_L = '+P.WL.toFixed(2),xA+12,yT+o.wl); }
- if(opt.showWa){ ctx.fillStyle=CSS.purp;  ctx.fillText('W_α = '+P.Wa.toFixed(2),xA+12,yT+o.wa); }
+ if(opt.showWL){ ctx.fillStyle=CSS.amber; ctx.fillText('W_L = '+P.WL.toFixed(2), xA+10, yT+22); }
+ if(opt.showWa){ ctx.fillStyle=CSS.purp;  ctx.fillText('W_α = '+P.Wa.toFixed(2), xA+10, yT+40); }
 }
 
 function draw(){
@@ -230,8 +232,8 @@ function draw(){
  } else if(stage===6){
    // payoff: faint lower tie line shows more solid on cooling
    const yT=py(PAY.T),xL=px(PAY.CL),xA=px(PAY.Ca);
-   ctx.globalAlpha=.45; ctx.strokeStyle=CSS.purp; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(xA,yT); ctx.stroke();
-   ctx.fillStyle=CSS.purp; ctx.font='12px Calibri'; ctx.textAlign='left'; ctx.fillText('1280°C → ~'+Math.round(PAY.Wa*100)+'% solid',xA+8,yT+4); ctx.globalAlpha=1;
+   ctx.globalAlpha=.5; ctx.strokeStyle=CSS.purp; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(xL,yT); ctx.lineTo(xA,yT); ctx.stroke();
+   ctx.fillStyle=CSS.purp; ctx.font='12px Calibri'; ctx.textAlign='right'; ctx.fillText('1280°C → ~'+Math.round(PAY.Wa*100)+'% solid', xL-10, yT+16); ctx.globalAlpha=1;
    // final picture: keep the far arm, drop the near-arm and C0 labels
    tieLine(STU,{far:true, near:false, showWL:true, showWa:true, hideC0:true},{far:-40});
  } else {
