@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ENGR 170 — Self-Guided Lectures</title>
+<style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --fg: #1a1c20;
+      --muted: #55606e;
+      --accent: #1f3864;
+      --line: #d7dde5;
+      --card: #f6f8fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14161a;
+        --fg: #e8eaed;
+        --muted: #a4adba;
+        --accent: #9db8e8;
+        --line: #2c313a;
+        --card: #1c1f25;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      -webkit-text-size-adjust: 100%;
+    }
+    .wrap { max-width: 40rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1 { font-size: 1.5rem; line-height: 1.3; margin: 0 0 0.25rem; color: var(--accent); }
+    .sub { margin: 0 0 2rem; color: var(--muted); font-size: 0.95rem; }
+    h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 2.5rem 0 0.75rem;
+      border-top: 1px solid var(--line);
+      padding-top: 1rem;
+    }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { margin: 0 0 0.5rem; }
+    a.entry {
+      display: flex;
+      gap: 0.7rem;
+      align-items: baseline;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 0.5rem;
+      background: var(--card);
+      text-decoration: none;
+      color: inherit;
+    }
+    a.entry:hover, a.entry:focus { border-color: var(--accent); }
+    a.entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .num {
+      flex: 0 0 auto;
+      min-width: 1.8rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .body { flex: 1 1 auto; min-width: 0; }
+    .title { display: block; font-weight: 600; }
+    .topic { display: block; margin: 0.2rem 0 0; color: var(--muted); font-size: 0.9rem; }
+    .file { display: block; margin: 0.2rem 0 0; color: var(--muted); font-size: 0.85rem; word-break: break-word; }
+    .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>ENGR 170 — Self-Guided Lectures</h1>
+  <p class="sub">Supplemental self-guided lectures and problems.</p>
+  <ul>
+    <li>
+      <a class="entry" href="lecture%202s%20bond-energy-solver.html">
+        <span class="num">2s</span>
+        <span class="body">
+          <span class="title">The Bond-Energy Curve — Build It, Then Solve It</span>
+          <span class="topic">Attraction, repulsion, and the equilibrium bond energy of an Na⁺–Cl⁻ pair</span>
+        </span>
+      </a>
+    </li>
+  </ul>
+</main>
+</body>
+</html>
