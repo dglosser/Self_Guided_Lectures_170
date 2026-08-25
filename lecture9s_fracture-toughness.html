@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fracture Toughness &amp; Critical Crack Size (Lecture 9s)</title>
+<style>
+  :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate);font-family:Calibri,'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 40px;}
+  h1{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:25px;margin:2px 0 2px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 14px;}
+  .stage{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:18px;flex-wrap:wrap;}
+  .canvaswrap{flex:1 1 500px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .panel{flex:1 1 355px;min-width:305px;display:flex;flex-direction:column;}
+  .step{font-size:12.5px;font-weight:bold;letter-spacing:1px;color:var(--purp);text-transform:uppercase;margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 17px;flex:1;}
+  .card h3{margin:0 0 8px;font-family:Cambria,serif;font-size:18px;color:var(--navy);}
+  .card p{font-size:14.5px;margin:0 0 10px;}
+  .eq{font-family:Cambria,serif;font-size:18px;color:var(--navy);background:var(--light);border-radius:6px;padding:9px 13px;display:block;margin:2px 0 10px;font-weight:bold;text-align:center;}
+  .defs{margin:4px 0 10px;padding:0;list-style:none;}
+  .defs li{font-size:13.8px;color:var(--slate);margin:5px 0;line-height:1.5;padding-left:15px;position:relative;}
+  .defs li::before{content:"•";position:absolute;left:2px;color:var(--purp);}
+  .defs b{color:var(--navy);font-family:Cambria,serif;}
+  .given{background:var(--light);border-radius:8px;padding:10px 14px;margin:6px 0 6px;font-size:13.8px;line-height:1.7;}
+  .given b{color:var(--navy);font-family:Cambria,serif;}
+  .footnote{font-size:12px;color:var(--mut);margin:2px 0 8px;line-height:1.45;}
+  .solution{margin-top:9px;font-size:13.5px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+  .answer-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  input[type=number]{font-family:Cambria;font-size:17px;width:110px;padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;}
+  .unit{color:var(--slate);font-size:15px;font-family:Cambria,serif;}
+  button{font-family:Calibri;font-size:14.5px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--navy);}
+  button:disabled{opacity:.4;cursor:default;}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:13px;}
+  .feedback{margin-top:11px;font-size:13.5px;line-height:1.55;border-radius:8px;padding:10px 13px;display:none;}
+  .feedback.ok{display:block;background:#E8F3EC;border:1px solid var(--green);color:#1c4c31;}
+  .feedback.no{display:block;background:#FBECE9;border:1px solid var(--terra);color:#7a2e22;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.on{background:var(--navy);}
+  .legend{font-size:13px;color:var(--mut);margin-top:8px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  b.term{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fracture toughness &amp; the critical crack</h1>
+  <p class="sub">A crack concentrates stress at its tip. When it grows to a critical size, the part snaps without warning. Find that size.</p>
+
+  <div class="stage">
+    <div class="canvaswrap">
+      <canvas id="cv" width="720" height="440" role="img" aria-label="Diagram of a cracked plate under tension"></canvas>
+      <div class="legend" id="capt" aria-live="polite">Fast fracture occurs when the stress intensity K reaches the material's toughness K<sub>IC</sub>.</div>
+    </div>
+    <div class="panel">
+      <div class="step" id="stepLabel">Step 1 of 6</div>
+      <div class="card" id="card"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
+
+const KIC=24, Y=1, SIG=300, SIG2=600;
+const AC1=(1/Math.PI)*(KIC/(Y*SIG))**2*1000;   // 2.04 mm
+const AC2=(1/Math.PI)*(KIC/(Y*SIG2))**2*1000;   // 0.51 mm
+const FLAW=1.0;                                  // mm present
+
+// ---- module-level state (persists across re-renders) ----
+let stage=0;
+let answers={R:'',A:'',B:''};
+let feedback={R:null,A:null,B:null};
+let attempts={R:0,A:0,B:0};
+let revealed={R:false,A:false,B:false};
+let solved={R:false,A:false,B:false};
+const solText={
+ R:'K<sub>IC</sub> / (Y&sigma;) = 24 / (1 &times; 300) = <b>0.08 &radic;m</b>.',
+ A:'a<sub>c</sub> = (1/&pi;)(0.08)&sup2; = 0.0064/&pi; = 0.00204 m = <b>2.0 mm</b>.',
+ B:'a<sub>c</sub> = (1/&pi;)(24/600)&sup2; = (1/&pi;)(0.04)&sup2; = 0.00051 m = <b>0.5 mm</b>.'
+};
+const stageKey=st=>({2:'R',3:'A',4:'B'})[st]||null;
+
+const GIVEN=`<div class="given"><b>Given — 7075-T6 aluminum (a high-strength aerospace alloy):</b>
+<ul class="defs" style="margin:7px 0 0">
+  <li><b>K<sub>IC</sub></b> — fracture toughness: the material's resistance to a running crack (a property) = 24 MPa·&radic;m</li>
+  <li><b>&sigma;</b> — applied (design) stress = 300 MPa</li>
+  <li><b>Y</b> — geometry factor (dimensionless) = 1 for a center crack in a wide plate</li>
+  <li><b>a</b> — crack length (m) &nbsp;·&nbsp; <b>a<sub>c</sub></b> — the critical crack length we solve for</li>
+  <li><b>Watch the bookkeeping:</b> for a <b>center</b> crack the total slit length is <b>2a</b>, so <b>a is the half-length</b>. Mixing up a and 2a is the single most common error in fracture mechanics.</li>
+</ul></div>
+<div class="footnote"><i>Beyond our scope:</i> K<sub>IC</sub> is a true material constant only under <i>plane strain</i>, which needs a thickness B &ge; 2.5·(K<sub>IC</sub>/&sigma;<sub>y</sub>)²; thinner sections show a higher, size-dependent toughness.</div>`;
+
+const stages=[
+ {html:`<h3>How cracked parts fail</h3>
+   <p>A sharp crack magnifies the stress at its tip. The <b>stress intensity K</b> measures that magnification; it grows with both the applied stress and the crack length.</p>
+   <ul class="defs"><li>When K reaches the material's <b>fracture toughness K<sub>IC</sub></b>, the crack runs unstably — <b>fast fracture</b>, often with no warning.</li></ul>
+   <p>So there is a <b>critical crack size</b> at any given stress. Let's find it.</p>`},
+ {html:`<h3>The fracture-mechanics model</h3>
+   <div class="eq">K = Y &sigma; &radic;(&pi; a)&nbsp;&nbsp;&rarr;&nbsp;&nbsp;fracture when K = K<sub>IC</sub></div>
+   <p>Set K = K<sub>IC</sub> and solve for the crack length. That gives the <b>critical crack size</b>:</p>
+   <div class="eq">a<sub>c</sub> = (1/&pi;) · ( K<sub>IC</sub> / (Y &sigma;) )²</div>
+   ${GIVEN}`},
+ {html:`<h3>Part 1 — the toughness-to-stress ratio</h3>
+   <p>Work the inside of the bracket first. Keep units: MPa·&radic;m &divide; MPa leaves <b>&radic;m</b>.</p>
+   <div class="eq">K<sub>IC</sub> / (Y &sigma;) = 24 / (1 &times; 300)</div>
+   <label class="sr-only" for="ansR">Part 1: toughness-to-stress ratio, in square-root meters</label>
+   <div class="answer-row"><span class="unit">ratio =</span><input type="number" id="ansR" step="0.01" placeholder="?"> <span class="unit">&radic;m</span><button id="checkR">Check</button></div>
+   <div class="feedback" id="fbR" aria-live="polite"></div>
+   <div id="hintR"></div>`},
+ {html:`<h3>Part 2 — the critical crack size</h3>
+   <p>Square your Part 1 ratio and divide by &pi;, then convert the answer to millimeters (&times;1000).</p>
+   <div class="eq">a<sub>c</sub> = (1/&pi;) · ( ratio )²&nbsp;&nbsp;<span style="font-weight:normal;font-size:13px;color:var(--mut)">— use your Part 1 result for “ratio”</span></div>
+   <label class="sr-only" for="ansA">Part 2: critical crack size, in millimeters</label>
+   <div class="answer-row"><span class="unit">a<sub>c</sub> =</span><input type="number" id="ansA" step="0.1" placeholder="?"> <span class="unit">mm</span><button id="checkA">Check</button></div>
+   <div class="feedback" id="fbA" aria-live="polite"></div>
+   <div id="hintA"></div>`},
+ {html:`<h3>Part 3 — an accidental overload cuts it fast</h3>
+   <p>In service, an unplanned event — an off-design load case, or an unexpected stress concentration around a fastener — briefly drives the stress to <b>&sigma; = 600 MPa</b> (double). Recompute the critical crack size.</p>
+   <div class="eq">a<sub>c</sub> = (1/&pi;) · ( 24 / (1 &times; 600) )²</div>
+   <ul class="defs"><li>The largest flaw actually present from manufacturing is about <b>1 mm</b>. Watch what your answer does to that margin.</li></ul>
+   <label class="sr-only" for="ansB">Part 3: critical crack size at the overload stress, in millimeters</label>
+   <div class="answer-row"><span class="unit">a<sub>c</sub> =</span><input type="number" id="ansB" step="0.1" placeholder="?"> <span class="unit">mm</span><button id="checkB">Check</button></div>
+   <div class="feedback" id="fbB" aria-live="polite"></div>
+   <div id="hintB"></div>`},
+ {html:`<h3>The design lesson</h3>
+   <ul class="defs">
+     <li>At 300 MPa the critical crack is <b>2.0 mm</b> — bigger than the 1 mm flaws present, so the part is <b>safe</b>.</li>
+     <li>An <b>accidental overload</b> to 600 MPa cuts a<sub>c</sub> <b>four-fold</b> to <b>0.5 mm</b> (a<sub>c</sub> &prop; 1/&sigma;²) — now <b>below</b> the 1 mm flaw, so those cracks are supercritical and the part <b>fractures</b>. Overload margin, not just the design stress, governs safety.</li>
+     <li>Turn it around: deliberately <b>proof-loading</b> to a stress &sigma;<sub>p</sub> and surviving <b>certifies</b> that no crack larger than a<sub>c</sub>(&sigma;<sub>p</sub>) is present — how pressure vessels and rocket tanks are screened without inspecting every square inch.</li>
+     <li>So fracture-critical parts pair a stress limit with an <b>inspection (or proof) limit</b>: you must detect — or prove the absence of — any crack smaller than a<sub>c</sub>.</li>
+     <li>This toughness (≈24 MPa·&radic;m at ~500 MPa yield) is essentially <b>7075-T6 aluminum</b> — exactly why high-strength aerospace aluminum is treated as fracture-critical and managed by inspection and fatigue limits.</li>
+   </ul>`}
+];
+
+// ---------- canvas (720 x 440 coordinate space) ----------
+const CW=720, CH=440, PL=72, PR=26, PT=44, PB=58;
+const SMAX=800, AMAX=4;                       // x: stress MPa, y: crack mm
+const px=s=>PL+(s/SMAX)*(CW-PL-PR);
+const py=a=>CH-PB-(a/AMAX)*(CH-PT-PB);
+const acAt=s=>(1/Math.PI)*(KIC/(Y*s))**2*1000;  // mm
+const TAU=2*Math.PI;
+const ARIA={
+ plate:'Diagram: a wide plate pulled in tension containing an internal center crack of total length 2a; stress concentrates at both crack tips.',
+ plot:'Line chart of critical crack size a_c in millimeters versus applied stress sigma in megapascals. The curve falls steeply as stress rises. A point at 300 MPa (2.0 mm), a 1 millimeter flaw line, and a point at 600 MPa (0.5 mm) are added as you work through the parts.'
+};
+
+function drawPlate(){
+ ctx.fillStyle=CSS.mut; ctx.font='15px Calibri'; ctx.textAlign='center';
+ ctx.fillText('an internal crack has two tips — its total length is 2a',CW/2,28);
+ // plate
+ const x0=300,y0=95,w=120,h=210;
+ ctx.fillStyle='#EEF2F8'; ctx.strokeStyle=CSS.steel; ctx.lineWidth=2.4; ctx.fillRect(x0,y0,w,h); ctx.strokeRect(x0,y0,w,h);
+ // internal center crack (centered slit)
+ const cx=x0+w/2, cy=y0+h/2, half=31, xL=cx-half, xR=cx+half;
+ ctx.strokeStyle=CSS.terra; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(xL,cy); ctx.lineTo(xR,cy); ctx.stroke();
+ // radiating stress at BOTH tips
+ ctx.strokeStyle=CSS.amber; ctx.lineWidth=1.6;
+ [[xL,-1],[xR,1]].forEach(([tx,dir])=>{ for(let k=-2;k<=2;k++){ const ang=k*0.5; ctx.beginPath(); ctx.moveTo(tx,cy); ctx.lineTo(tx+dir*22*Math.cos(ang),cy+22*Math.sin(ang)); ctx.stroke(); } });
+ // dimension: 2a and each half a
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.3;
+ const dy=cy+26;
+ ctx.beginPath(); ctx.moveTo(xL,dy); ctx.lineTo(xR,dy); ctx.stroke();
+ [xL,cx,xR].forEach(tx=>{ ctx.beginPath(); ctx.moveTo(tx,dy-5); ctx.lineTo(tx,dy+5); ctx.stroke(); });
+ ctx.fillStyle=CSS.navy; ctx.font='13px Cambria'; ctx.textAlign='center';
+ ctx.fillText('a',(xL+cx)/2,cy+14); ctx.fillText('a',(cx+xR)/2,cy+14);
+ ctx.font='bold 14px Cambria'; ctx.fillText('2a',cx,dy+18);
+ // tension arrows
+ ctx.strokeStyle=CSS.slate; ctx.fillStyle=CSS.slate; ctx.lineWidth=2.4;
+ const arrow=(ax,ay,dir)=>{ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax,ay+dir*32); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax-6,ay+dir*10); ctx.lineTo(ax+6,ay+dir*10); ctx.closePath(); ctx.fill(); };
+ [x0+34,x0+86].forEach(ax=>arrow(ax,y0-6,-1));
+ [x0+34,x0+86].forEach(ax=>arrow(ax,y0+h+6,1));
+ ctx.font='bold 16px Cambria'; ctx.textAlign='center'; ctx.fillStyle=CSS.slate;
+ ctx.fillText('σ',cx,y0-42); ctx.fillText('σ',cx,y0+h+54);
+ // right-side callout
+ ctx.strokeStyle=CSS.terra; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(xR+2,cy); ctx.lineTo(x0+w+14,cy); ctx.stroke();
+ ctx.fillStyle=CSS.terra; ctx.font='bold 15px Calibri'; ctx.textAlign='left';
+ ctx.fillText('internal center crack', x0+w+20, cy-4);
+ ctx.fillText('(total length 2a)', x0+w+20, cy+16);
+ // formula
+ ctx.fillStyle=CSS.navy; ctx.font='15px Cambria'; ctx.textAlign='center';
+ ctx.fillText('K = Y σ √(π a)   —   fast fracture when K = K_IC   (a = half-length)',CW/2,CH-20);
+}
+
+function drawPlot(){
+ ctx.fillStyle=CSS.mut; ctx.font='15px Calibri'; ctx.textAlign='center';
+ ctx.fillText('critical crack size shrinks as stress rises',CW/2,26);
+ // axes
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,CH-PB); ctx.lineTo(CW-PR,CH-PB); ctx.stroke();
+ ctx.font='13.5px Calibri'; ctx.fillStyle=CSS.mut; ctx.textAlign='right';
+ for(let a=0;a<=4;a+=1){ const y=py(a); ctx.fillText(a,PL-8,y+4); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(CW-PR,y); ctx.stroke(); }
+ ctx.textAlign='center'; ctx.fillStyle=CSS.mut;
+ for(let s=0;s<=800;s+=200){ ctx.fillText(s,px(s),CH-PB+19); }
+ ctx.fillStyle=CSS.slate; ctx.font='15px Calibri'; ctx.fillText('applied stress  σ  (MPa)',CW/2,CH-8);
+ ctx.save(); ctx.translate(16,(PT+CH-PB)/2); ctx.rotate(-Math.PI/2); ctx.fillText('critical crack size  a_c  (mm)',0,0); ctx.restore();
+ // a_c(σ) curve
+ ctx.strokeStyle=CSS.steel; ctx.lineWidth=2.8; ctx.beginPath(); let first=true;
+ for(let s=180;s<=SMAX;s+=4){ const a=acAt(s); if(a>AMAX) continue; const x=px(s),y=py(a); if(first){ctx.moveTo(x,y);first=false;} else ctx.lineTo(x,y); }
+ ctx.stroke();
+ ctx.fillStyle=CSS.steel; ctx.font='bold 15px Calibri'; ctx.textAlign='left'; ctx.fillText('a_c(σ) boundary',px(470),py(3.15));
+ ctx.fillStyle=CSS.terra; ctx.font='bold 14px Calibri'; ctx.textAlign='center'; ctx.fillText('FRACTURE  (crack > a_c)',px(590),py(3.7));
+ ctx.fillStyle=CSS.green; ctx.textAlign='center'; ctx.fillText('SAFE  (crack < a_c)',px(250),py(0.42));
+ // point at 300 — only once Part 2 is solved (A2: don't leak the answer)
+ if(solved.A){ ctx.fillStyle=CSS.navy; ctx.beginPath(); ctx.arc(px(300),py(AC1),7,0,TAU); ctx.fill();
+   ctx.fillStyle=CSS.navy; ctx.font='bold 14px Calibri'; ctx.textAlign='left'; ctx.fillText('σ=300 → a_c = 2.0 mm',px(300)+12,py(AC1)-10); }
+ // flaw line — given data, shown from stage 4
+ if(stage>=4){ ctx.strokeStyle=CSS.purp; ctx.lineWidth=1.8; ctx.setLineDash([6,4]); ctx.beginPath(); ctx.moveTo(PL,py(FLAW)); ctx.lineTo(CW-PR,py(FLAW)); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.purp; ctx.font='bold 14px Calibri'; ctx.textAlign='left'; ctx.fillText('flaws present ≈ 1 mm',px(20),py(FLAW)-9); }
+ // overload point at 600 — only once Part 3 is solved (A2)
+ if(solved.B){ ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(px(600),py(AC2),7,0,TAU); ctx.fill();
+   ctx.fillStyle=CSS.terra; ctx.font='bold 14px Calibri'; ctx.textAlign='right'; ctx.fillText('σ=600 → a_c = 0.5 mm',px(600)-12,py(AC2)+20); }
+}
+
+function updateCaption(){
+ const capt=document.getElementById('capt');
+ if(stage===0){ if(capt) capt.innerHTML="Fast fracture occurs when the stress intensity K reaches the material's toughness K<sub>IC</sub>."; cv.setAttribute('aria-label',ARIA.plate); }
+ else { if(capt) capt.innerHTML='On this plot the curve is the a<sub>c</sub>(σ) boundary: any crack that plots <b>below</b> it survives at that stress; any crack <b>above</b> it drives fast fracture.'; cv.setAttribute('aria-label',ARIA.plot); }
+}
+
+function draw(){
+ const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||720;
+ cv.width=cssW*dpr; cv.height=cssW*(CH/CW)*dpr; ctx.setTransform((cssW/CW)*dpr,0,0,(cssW/CW)*dpr,0,0);
+ ctx.clearRect(0,0,CW,CH);
+ if(stage===0) drawPlate(); else drawPlot();
+ updateCaption();
+}
+
+function render(){
+ document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
+ document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
+ const gated=(key!==null) && !(solved[key]||revealed[key]);
+ let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
+ if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
+ else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
+ nav+=`</div>`;
+ document.getElementById('card').insertAdjacentHTML('beforeend',nav);
+ let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
+ document.getElementById('dots').innerHTML=dh;
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; answers={R:'',A:'',B:''}; feedback={R:null,A:null,B:null}; attempts={R:0,A:0,B:0}; revealed={R:false,A:false,B:false}; solved={R:false,A:false,B:false}; render(); };
+ wire('checkR',checkR); wire('checkA',checkA); wire('checkB',checkB);
+ // restore per-step state
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({R:checkR,A:checkA,B:checkB})[key](); } }; }
+   applyStepState(key);
+ }
+ draw();
+}
+function wire(id,fn){ const b=document.getElementById(id); if(b) b.onclick=fn; }
+function updateNext(){ const key=stageKey(stage); const nx=document.getElementById('next'); if(!nx||!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){
+     hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>';
+     const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); };
+   } else hint.innerHTML='';
+ }
+ updateNext();
+}
+const near=(v,t,tol)=>Math.abs(v-t)<tol;
+
+function checkR(){ const raw=document.getElementById('ansR').value; answers.R=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.R={cls:'no',html:'Enter a number.'}; applyStepState('R'); return; }
+ if(near(v,0.08,0.006)){ solved.R=true; feedback.R={cls:'ok',html:'✓ Correct — 24 / 300 = <b>0.08 √m</b>. Click Next.'}; }
+ else { attempts.R++;
+   if(near(v,12.5,1)) feedback.R={cls:'no',html:'You flipped it. K<sub>IC</sub> goes on top: 24 / 300, not 300 / 24.'};
+   else feedback.R={cls:'no',html:'Not quite. K<sub>IC</sub>/(Yσ) = 24 / (1 × 300) = 0.08.'};
+ }
+ applyStepState('R'); }
+
+function checkA(){ const raw=document.getElementById('ansA').value; answers.A=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.A={cls:'no',html:'Enter a number (in mm).'}; applyStepState('A'); return; }
+ if(near(v,2.0,0.2)){ solved.A=true; feedback.A={cls:'ok',html:'✓ Correct — (1/π)(0.08)² = 0.00204 m = <b>2.0 mm</b>. Click Next.'}; }
+ else { attempts.A++;
+   if(near(v,6.4,0.6)) feedback.A={cls:'no',html:'You skipped the 1/π. Divide the squared ratio by π: 0.0064/π.'};
+   else if(near(v,25.5,2)) feedback.A={cls:'no',html:'Square the ratio first: (0.08)² = 0.0064, then divide by π.'};
+   else if(v>0&&v<0.05) feedback.A={cls:'no',html:'That\'s the value in meters (0.00204 m). Convert to mm: ×1000 → 2.0 mm.'};
+   else feedback.A={cls:'no',html:'Not quite. a_c = (1/π)(0.08)² = 0.00204 m = 2.0 mm.'};
+ }
+ applyStepState('A'); draw(); }
+
+function checkB(){ const raw=document.getElementById('ansB').value; answers.B=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.B={cls:'no',html:'Enter a number (in mm).'}; applyStepState('B'); return; }
+ if(near(v,0.5,0.08)){ solved.B=true; feedback.B={cls:'ok',html:'✓ Correct — (1/π)(24/600)² = 0.00051 m = <b>0.5 mm</b>. Now below the 1 mm flaw → fracture. Click Next.'}; }
+ else { attempts.B++;
+   if(near(v,2.0,0.2)) feedback.B={cls:'no',html:'Use the new stress: σ = 600, not 300. Doubling σ cuts a_c four-fold.'};
+   else feedback.B={cls:'no',html:'Not quite. a_c = (1/π)(24/600)² = 0.5 mm.'};
+ }
+ applyStepState('B'); draw(); }
+
+window.addEventListener('resize',draw);
+render();
+</script>
+</body>
+</html>

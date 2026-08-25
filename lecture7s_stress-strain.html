@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading a Stress–Strain Curve (Lecture 7s)</title>
+<style>
+  :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate);font-family:Calibri,'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 40px;}
+  h1{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:25px;margin:2px 0 2px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 14px;}
+  .stage{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:18px;flex-wrap:wrap;}
+  .canvaswrap{flex:1 1 500px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .panel{flex:1 1 355px;min-width:305px;display:flex;flex-direction:column;}
+  .step{font-size:12.5px;font-weight:bold;letter-spacing:1px;color:var(--purp);text-transform:uppercase;margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 17px;flex:1;}
+  .card h3{margin:0 0 8px;font-family:Cambria,serif;font-size:18px;color:var(--navy);}
+  .card p{font-size:14.5px;margin:0 0 10px;}
+  .eq{font-family:Cambria,serif;font-size:18px;color:var(--navy);background:var(--light);border-radius:6px;padding:9px 13px;display:block;margin:2px 0 10px;font-weight:bold;text-align:center;}
+  .defs{margin:4px 0 10px;padding:0;list-style:none;}
+  .defs li{font-size:13.8px;color:var(--slate);margin:5px 0;line-height:1.5;padding-left:15px;position:relative;}
+  .defs li::before{content:"•";position:absolute;left:2px;color:var(--purp);}
+  .defs b{color:var(--navy);font-family:Cambria,serif;}
+  .footnote{font-size:12px;color:var(--mut);margin:2px 0 8px;line-height:1.45;}
+  .solution{margin-top:9px;font-size:13.5px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+  .answer-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  input[type=number]{font-family:Cambria;font-size:17px;width:110px;padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;}
+  .unit{color:var(--slate);font-size:15px;font-family:Cambria,serif;}
+  button{font-family:Calibri;font-size:14.5px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--navy);}
+  button:disabled{opacity:.4;cursor:default;}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:13px;}
+  .feedback{margin-top:11px;font-size:13.5px;line-height:1.55;border-radius:8px;padding:10px 13px;display:none;}
+  .feedback.ok{display:block;background:#E8F3EC;border:1px solid var(--green);color:#1c4c31;}
+  .feedback.no{display:block;background:#FBECE9;border:1px solid var(--terra);color:#7a2e22;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.on{background:var(--navy);}
+  .legend{font-size:13px;color:var(--mut);margin-top:8px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  b.term{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Reading a stress–strain curve</h1>
+  <p class="sub">Pull a metal bar in a tensile test and you get this curve. Four numbers on it describe the material — let's read each one.</p>
+
+  <div class="stage">
+    <div class="canvaswrap">
+      <canvas id="cv" width="720" height="440" role="img" aria-label="Engineering stress-strain curve for a ductile metal"></canvas>
+      <div class="legend" id="capt" aria-live="polite">Engineering stress vs strain for a ductile metal.</div>
+    </div>
+    <div class="panel">
+      <div class="step" id="stepLabel">Step 1 of 6</div>
+      <div class="card" id="card"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
+
+// engineering stress-strain curve (strain, stress MPa)
+const CURVE=[[0,0],[0.001,100],[0.002,200],[0.003,300],[0.0032,320],[0.0055,350],[0.01,375],[0.02,400],[0.035,420],[0.05,430],[0.07,442],[0.09,448],[0.12,450],[0.135,447],[0.15,435],[0.16,415]];
+const Emod=100, SY=350, UTS=450, EL=16;   // GPa, MPa, MPa, %
+
+// ---- module-level state (persists across re-renders) ----
+let stage=0;
+let answers={E:'',Y:'',U:'',D:''};
+let feedback={E:null,Y:null,U:null,D:null};
+let attempts={E:0,Y:0,U:0,D:0};
+let revealed={E:false,Y:false,U:false,D:false};
+let solved={E:false,Y:false,U:false,D:false};
+const solText={
+ E:'E = &Delta;&sigma; / &Delta;&epsilon; = 200 MPa / 0.002 = 100,000 MPa = <b>100 GPa</b>.',
+ Y:'The 0.2% offset line (parallel to the elastic slope, starting at &epsilon; = 0.002) meets the curve at <b>350 MPa</b>.',
+ U:'The highest point on the curve is <b>450 MPa</b> &mdash; the ultimate tensile strength.',
+ D:'The bar breaks at strain &epsilon; = 0.16, so %EL = 0.16 &times; 100 = <b>16%</b>.'
+};
+const stageKey=st=>({1:'E',2:'Y',3:'U',4:'D'})[st]||null;
+
+const stages=[
+ {html:`<h3>What a tensile test measures</h3>
+   <p>A machine stretches a metal bar and records the force and how much it stretches. Dividing by the bar's original size gives two quantities we plot against each other:</p>
+   <ul class="defs">
+     <li><b>&sigma;</b> (engineering stress) &mdash; force divided by the <b>original</b> cross-section area, &sigma; = F/A<sub>0</sub>, in MPa</li>
+     <li><b>&epsilon;</b> (engineering strain) &mdash; change in length divided by the <b>original</b> length, &epsilon; = &Delta;l/l<sub>0</sub> (a pure number)</li>
+   </ul>
+   <p>Four numbers off this curve tell you almost everything about the metal's mechanical behavior.</p>`},
+ {html:`<h3>Elastic modulus E &mdash; the stiffness</h3>
+   <ul class="defs">
+     <li><b>E</b> (elastic modulus, or Young's modulus) &mdash; how stiff the material is: the <b>slope</b> of the straight, low-strain part of the curve, where deformation is fully reversible</li>
+   </ul>
+   <div class="eq">E = &Delta;&sigma; / &Delta;&epsilon;</div>
+   <p>Two points sit on the straight elastic line (marked): (&epsilon;=0.001, &sigma;=100 MPa) and (&epsilon;=0.003, &sigma;=300 MPa). Find the slope, then give it in <b>GPa</b> (1 GPa = 1000 MPa).</p>
+   <label class="sr-only" for="ansE">Elastic modulus E, in gigapascals</label>
+   <div class="answer-row"><span class="unit">E =</span><input type="number" id="ansE" step="1" placeholder="?"> <span class="unit">GPa</span><button id="checkE">Check</button></div>
+   <div class="feedback" id="fbE" aria-live="polite"></div>
+   <div id="hintE"></div>`},
+ {html:`<h3>Yield strength &sigma;<sub>y</sub> &mdash; the 0.2% offset</h3>
+   <ul class="defs">
+     <li><b>&sigma;<sub>y</sub></b> (yield strength) &mdash; the stress where <b>permanent</b> (plastic) deformation begins</li>
+     <li>Because the curve bends gradually, we define it by the <b>0.2% offset</b>: draw a line parallel to the elastic slope but starting at &epsilon; = 0.002. Where it crosses the curve is &sigma;<sub>y</sub>.</li>
+   </ul>
+   <p>The offset line and its crossing point are drawn for you. Read the stress at that crossing off the vertical axis (in MPa).</p>
+   <label class="sr-only" for="ansY">Yield strength, in megapascals</label>
+   <div class="answer-row"><span class="unit">&sigma;<sub>y</sub> =</span><input type="number" id="ansY" step="5" placeholder="?"> <span class="unit">MPa</span><button id="checkY">Check</button></div>
+   <div class="feedback" id="fbY" aria-live="polite"></div>
+   <div id="hintY"></div>`},
+ {html:`<h3>Tensile strength (UTS) &mdash; the peak</h3>
+   <ul class="defs">
+     <li><b>UTS</b> (ultimate tensile strength) &mdash; the <b>maximum</b> engineering stress the material carries: the highest point on the curve. Beyond it the bar "necks" and thins locally.</li>
+   </ul>
+   <p>Read the stress at the peak of the curve (marked) off the vertical axis, in MPa.</p>
+   <label class="sr-only" for="ansU">Ultimate tensile strength, in megapascals</label>
+   <div class="answer-row"><span class="unit">UTS =</span><input type="number" id="ansU" step="5" placeholder="?"> <span class="unit">MPa</span><button id="checkU">Check</button></div>
+   <div class="feedback" id="fbU" aria-live="polite"></div>
+   <div id="hintU"></div>`},
+ {html:`<h3>Ductility &mdash; percent elongation</h3>
+   <ul class="defs">
+     <li><b>%EL</b> (percent elongation) &mdash; how much the bar stretches before it breaks: the strain at the <b>fracture</b> point, expressed as a percent</li>
+   </ul>
+   <div class="eq">%EL = &epsilon;<sub>fracture</sub> &times; 100</div>
+   <p>The curve ends (the bar breaks) at the marked fracture point. Read its strain off the horizontal axis, then convert to a percent.</p>
+   <label class="sr-only" for="ansD">Percent elongation, in percent</label>
+   <div class="answer-row"><span class="unit">%EL =</span><input type="number" id="ansD" step="1" placeholder="?"> <span class="unit">%</span><button id="checkD">Check</button></div>
+   <div class="feedback" id="fbD" aria-live="polite"></div>
+   <div id="hintD"></div>`},
+ {html:`<h3>What the four numbers mean</h3>
+   <ul class="defs">
+     <li><b>E = 100 GPa</b> &mdash; stiffness. Sets how much it springs under load (fully recovered on unloading).</li>
+     <li><b>&sigma;<sub>y</sub> = 350 MPa</b> &mdash; the design limit: stay below it and the part returns to shape; go above and it's bent for good.</li>
+     <li><b>UTS = 450 MPa</b> &mdash; the most stress it can carry before necking toward failure.</li>
+     <li><b>%EL = 16%</b> &mdash; ductility. A high value means it stretches and warns you before breaking (ductile); a low value means it snaps (brittle).</li>
+   </ul>
+   <p>Note &sigma;<sub>y</sub> &lt; UTS always: the metal keeps getting stronger (strain-hardens) after it starts to yield, up to the peak.</p>
+   <div class="footnote"><i>A finer point:</i> %EL is conventionally measured on the <b>reassembled fractured specimen</b> — the plastic strain (l<sub>f</sub>&minus;l<sub>0</sub>)/l<sub>0</sub>, which excludes the elastic springback that recovers on unloading (~0.4% at 415 MPa, giving ~15.6%). Reading total engineering strain straight off the curve gives 16% and is the standard introductory practice used here.</div>`}
+];
+
+// ---------- canvas (720 x 440 coordinate space) ----------
+const CW=720, CH=440, PL=66, PR=20, PT=34, PB=52;
+let VW={xmax:0.18,ymax:500};
+const px=e=>PL+(e/VW.xmax)*(CW-PL-PR);
+const py=s=>CH-PB-(s/VW.ymax)*(CH-PT-PB);
+function curveStress(e){ for(let i=1;i<CURVE.length;i++){ if(e<=CURVE[i][0]){ const [e0,s0]=CURVE[i-1],[e1,s1]=CURVE[i]; return s0+(s1-s0)*(e-e0)/(e1-e0); } } return CURVE[CURVE.length-1][1]; }
+function view(){
+ if(stage===1) return {xmax:0.006,ymax:360,xt:[0,0.001,0.002,0.003,0.004,0.005,0.006],yt:[0,100,200,300],title:'elastic region — zoomed in from the start of the curve'};
+ if(stage===2) return {xmax:0.010,ymax:420,xt:[0,0.002,0.004,0.006,0.008,0.010],yt:[0,100,200,300,400],title:'yield region — zoomed in from the start of the curve'};
+ return {xmax:0.18,ymax:500,xt:[0,0.04,0.08,0.12,0.16],yt:[0,100,200,300,400,500],title:'engineering stress–strain curve'};
+}
+
+const ARIA={
+ 0:'Line chart of engineering stress in megapascals versus engineering strain for a ductile metal. The curve rises steeply and linearly at first, bends over as it yields, climbs to a rounded peak, then falls slightly to the fracture point where it ends.',
+ 1:'Line chart zoomed into the low-strain region. A dashed slope triangle marks two points on the straight elastic line, at strain 0.001 (100 MPa) and strain 0.003 (300 MPa), from which the elastic modulus is read as rise over run.',
+ 2:'Line chart zoomed into the low-strain region. A dashed 0.2% offset line, parallel to the elastic slope and starting at strain 0.002, meets the curve at the yield point, marked with a horizontal read-off line to the vertical axis.',
+ 3:'Full stress-strain curve with the peak marked. A horizontal read-off line runs from the highest point of the curve to the vertical axis to read the ultimate tensile strength.',
+ 4:'Full stress-strain curve with the fracture point at the end of the curve marked. A vertical read-off line drops from the fracture point to the horizontal axis to read the fracture strain.',
+ 5:'Full stress-strain curve with all four quantities marked: the elastic slope, the yield point, the peak (UTS), and the fracture point.'
+};
+const CAPT={
+ 0:'Engineering stress &sigma; versus strain &epsilon; for a ductile metal — the four key numbers are read off this one curve.',
+ 1:'Zoomed into the low-strain elastic region: read the <b>slope</b> of the straight line between the two marked points to get E.',
+ 2:'Zoomed into the low-strain region: the dashed <b>0.2% offset</b> line crosses the curve at the yield strength &sigma;<sub>y</sub>.',
+ 3:'Reading the <b>peak</b> of the curve: the maximum engineering stress is the ultimate tensile strength (UTS).',
+ 4:'Reading the <b>fracture point</b> where the curve ends: its strain gives the percent elongation.',
+ 5:'All four marked: the elastic slope E, the yield point &sigma;<sub>y</sub>, the peak UTS, and the fracture point.'
+};
+
+function updateCaption(){
+ const capt=document.getElementById('capt');
+ if(capt) capt.innerHTML=CAPT[stage];
+ cv.setAttribute('aria-label',ARIA[stage]);
+}
+
+function draw(){
+ const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||CW;
+ cv.width=cssW*dpr; cv.height=cssW*(CH/CW)*dpr; ctx.setTransform((cssW/CW)*dpr,0,0,(cssW/CW)*dpr,0,0);
+ VW=view();
+ ctx.clearRect(0,0,CW,CH);
+ ctx.fillStyle=CSS.mut; ctx.font='15px Calibri'; ctx.textAlign='center';
+ ctx.fillText(VW.title,CW/2,22);
+ // axes
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,CH-PB); ctx.lineTo(CW-PR,CH-PB); ctx.stroke();
+ ctx.font='13.5px Calibri'; ctx.fillStyle=CSS.mut; ctx.textAlign='right';
+ VW.yt.forEach(s=>{ const y=py(s); ctx.fillText(s,PL-8,y+4); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(CW-PR,y); ctx.stroke(); });
+ ctx.textAlign='center'; ctx.fillStyle=CSS.mut;
+ const dec=VW.xmax<=0.012?3:2;
+ VW.xt.forEach(e=>ctx.fillText(e.toFixed(dec),px(e),CH-PB+18));
+ ctx.fillStyle=CSS.slate; ctx.font='15px Calibri'; ctx.fillText('strain  ε  =  Δl / l₀',CW/2,CH-7);
+ ctx.save(); ctx.translate(15,(PT+CH-PB)/2); ctx.rotate(-Math.PI/2); ctx.fillText('stress  σ  (MPa)',0,0); ctx.restore();
+ // curve (sampled so it works at any zoom)
+ ctx.strokeStyle=CSS.steel; ctx.lineWidth=2.8; ctx.beginPath();
+ const eEnd=Math.min(VW.xmax,0.16); let first=true;
+ for(let e=0;e<=eEnd+1e-9;e+=eEnd/320){ const x=px(e),y=py(curveStress(e)); if(first){ctx.moveTo(x,y);first=false;} else ctx.lineTo(x,y); }
+ ctx.stroke();
+
+ // STEP 1: elastic slope triangle + two points
+ if(stage===1){
+   const p1=[0.001,100], p2=[0.003,300];
+   // slope triangle
+   ctx.strokeStyle=CSS.amber; ctx.lineWidth=2; ctx.setLineDash([5,3]);
+   ctx.beginPath(); ctx.moveTo(px(p1[0]),py(p1[1])); ctx.lineTo(px(p2[0]),py(p1[1])); ctx.lineTo(px(p2[0]),py(p2[1])); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.amber; ctx.font='bold 15px Calibri'; ctx.textAlign='center';
+   ctx.fillText('Δε = 0.002',px(0.002),py(100)+26);
+   ctx.textAlign='left'; ctx.fillText('Δσ = 200 MPa',px(0.003)+14,py(200)+5);
+   // the two points on the elastic line (coordinates are given in the card)
+   [p1,p2].forEach(p=>{ ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(px(p[0]),py(p[1]),6,0,2*Math.PI); ctx.fill(); });
+   ctx.fillStyle=CSS.terra; ctx.font='bold 14px Calibri'; ctx.textAlign='left';
+   ctx.fillText('two points on the line',px(0.0032)+14,py(300)+30);
+ }
+ // STEP 2: 0.2% offset construction
+ if(stage===2){
+   // offset line sigma = E(eps-0.002), E=100000 MPa; cap end so it stays on-plot
+   ctx.strokeStyle=CSS.amber; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+   ctx.beginPath(); ctx.moveTo(px(0.002),py(0)); ctx.lineTo(px(0.006),py(400)); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.amber; ctx.font='bold 15px Calibri'; ctx.textAlign='left'; ctx.fillText('0.2% offset line',px(0.0034),py(110));
+   ctx.textAlign='center'; ctx.font='14px Calibri'; ctx.fillText('starts at ε = 0.002',px(0.0022),py(35));
+   // intersection point + drop to axis
+   const ix=px(0.0055), iy=py(350);
+   ctx.strokeStyle=CSS.terra; ctx.lineWidth=1.8; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(PL,iy); ctx.lineTo(ix,iy); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(ix,iy,7,0,2*Math.PI); ctx.fill();
+   ctx.fillStyle=CSS.terra; ctx.font='bold 15px Calibri'; ctx.textAlign='left'; ctx.fillText('σ_y — read across ←',ix+12,iy+5);
+ }
+ // STEP 3: UTS peak
+ if(stage===3){
+   const ix=px(0.12), iy=py(450);
+   ctx.strokeStyle=CSS.terra; ctx.lineWidth=1.8; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(PL,iy); ctx.lineTo(ix,iy); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(ix,iy,7,0,2*Math.PI); ctx.fill();
+   ctx.fillStyle=CSS.terra; ctx.font='bold 15px Calibri'; ctx.textAlign='center'; ctx.fillText('peak (UTS) — read across ←',ix+40,iy-12);
+ }
+ // STEP 4: fracture point
+ if(stage===4){
+   const fx=px(0.16), fy=py(415);
+   ctx.strokeStyle=CSS.terra; ctx.lineWidth=1.8; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(fx,CH-PB); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(fx,fy,7,0,2*Math.PI); ctx.fill();
+   ctx.fillStyle=CSS.terra; ctx.font='bold 15px Calibri'; ctx.textAlign='center'; ctx.fillText('✕ fracture',fx-4,fy-12);
+   ctx.font='14px Calibri'; ctx.fillText('read ε here ↓',fx,CH-PB+34);
+ }
+ // PAYOFF: all four marked
+ if(stage===5){
+   const mk=(x,y,lab,dx,dy,al)=>{ ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(x,y,6,0,2*Math.PI); ctx.fill(); ctx.fillStyle=CSS.navy; ctx.font='bold 14px Calibri'; ctx.textAlign=al||'left'; ctx.fillText(lab,x+dx,y+dy); };
+   mk(px(0.002),py(200),'E (slope)',8,0,'left');
+   mk(px(0.0055),py(350),'σ_y 350',8,-4,'left');
+   mk(px(0.12),py(450),'UTS 450',0,-10,'center');
+   mk(px(0.16),py(415),'fracture 16%',-8,-8,'right');
+ }
+ updateCaption();
+}
+
+function render(){
+ document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
+ document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
+ const gated=(key!==null) && !(solved[key]||revealed[key]);
+ let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
+ if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
+ else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
+ nav+=`</div>`;
+ document.getElementById('card').insertAdjacentHTML('beforeend',nav);
+ let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
+ document.getElementById('dots').innerHTML=dh;
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; answers={E:'',Y:'',U:'',D:''}; feedback={E:null,Y:null,U:null,D:null}; attempts={E:0,Y:0,U:0,D:0}; revealed={E:false,Y:false,U:false,D:false}; solved={E:false,Y:false,U:false,D:false}; render(); };
+ wire('checkE',checkE); wire('checkY',checkY); wire('checkU',checkU); wire('checkD',checkD);
+ // restore per-step state
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({E:checkE,Y:checkY,U:checkU,D:checkD})[key](); } }; }
+   applyStepState(key);
+ }
+ draw();
+}
+function wire(id,fn){ const b=document.getElementById(id); if(b) b.onclick=fn; }
+function updateNext(){ const key=stageKey(stage); const nx=document.getElementById('next'); if(!nx||!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){
+     hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>';
+     const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); };
+   } else hint.innerHTML='';
+ }
+ updateNext();
+}
+const near=(v,t,tol)=>Math.abs(v-t)<tol;
+
+function checkE(){ const raw=document.getElementById('ansE').value; answers.E=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.E={cls:'no',html:'Enter a number (in GPa).'}; applyStepState('E'); return; }
+ if(near(v,100,6)){ solved.E=true; feedback.E={cls:'ok',html:'✓ Correct — slope = 200 MPa / 0.002 = 100,000 MPa = <b>100 GPa</b>. Click Next.'}; }
+ else { attempts.E++;
+   if(near(v,100000,5000)) feedback.E={cls:'no',html:'That\'s the slope in MPa. Convert to GPa: divide by 1000 → 100 GPa.'};
+   else if(near(v,1000,100)) feedback.E={cls:'no',html:'Did you put strain in percent? Strain is a pure number: Δε = 0.002, not 0.2.'};
+   else feedback.E={cls:'no',html:'Not quite. E = Δσ/Δε = 200/0.002 = 100,000 MPa = 100 GPa.'};
+ }
+ applyStepState('E'); draw(); }
+
+function checkY(){ const raw=document.getElementById('ansY').value; answers.Y=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.Y={cls:'no',html:'Enter a number (in MPa).'}; applyStepState('Y'); return; }
+ if(near(v,350,12)){ solved.Y=true; feedback.Y={cls:'ok',html:'✓ Correct — the 0.2% offset line meets the curve at <b>350 MPa</b>. Click Next.'}; }
+ else { attempts.Y++;
+   if(near(v,320,12)) feedback.Y={cls:'no',html:'That\'s the proportional limit (end of the straight part). Yield is where the <b>offset line</b> crosses the curve.'};
+   else if(near(v,450,15)) feedback.Y={cls:'no',html:'That\'s the peak (tensile strength). Yield is lower — where the offset line crosses.'};
+   else feedback.Y={cls:'no',html:'Not quite. Read the stress where the dashed offset line meets the curve ≈ 350 MPa.'};
+ }
+ applyStepState('Y'); draw(); }
+
+function checkU(){ const raw=document.getElementById('ansU').value; answers.U=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.U={cls:'no',html:'Enter a number (in MPa).'}; applyStepState('U'); return; }
+ if(near(v,450,12)){ solved.U=true; feedback.U={cls:'ok',html:'✓ Correct — the highest point is <b>450 MPa</b>. Click Next.'}; }
+ else { attempts.U++;
+   if(near(v,415,12)) feedback.U={cls:'no',html:'That\'s the stress at fracture. UTS is the <b>maximum</b> — the peak, which comes before fracture.'};
+   else if(near(v,350,12)) feedback.U={cls:'no',html:'That\'s the yield strength. UTS is the top of the curve, higher up.'};
+   else feedback.U={cls:'no',html:'Not quite. UTS is the peak stress ≈ 450 MPa.'};
+ }
+ applyStepState('U'); draw(); }
+
+function checkD(){ const raw=document.getElementById('ansD').value; answers.D=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.D={cls:'no',html:'Enter a number (in %).'}; applyStepState('D'); return; }
+ if(near(v,16,1.5)){ solved.D=true; feedback.D={cls:'ok',html:'✓ Correct — fracture strain 0.16 × 100 = <b>16%</b>. Click Next.'}; }
+ else { attempts.D++;
+   if(near(v,0.16,0.03)) feedback.D={cls:'no',html:'That\'s the strain itself. Multiply by 100 to get percent: 0.16 → 16%.'};
+   else if(near(v,12,1.5)) feedback.D={cls:'no',html:'That\'s the strain at the peak. Ductility uses the strain at <b>fracture</b> (the very end).'};
+   else feedback.D={cls:'no',html:'Not quite. %EL = 0.16 × 100 = 16%.'};
+ }
+ applyStepState('D'); draw(); }
+
+window.addEventListener('resize',draw);
+render();
+</script>
+</body>
+</html>

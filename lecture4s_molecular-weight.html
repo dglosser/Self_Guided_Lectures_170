@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Molecular Weight of a Polymer (Lecture 4s)</title>
+<style>
+  :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate);font-family:Calibri,'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 40px;}
+  h1{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:25px;margin:2px 0 2px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 14px;}
+  .stage{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:18px;flex-wrap:wrap;}
+  .canvaswrap{flex:1 1 500px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .panel{flex:1 1 340px;min-width:300px;display:flex;flex-direction:column;}
+  .step{font-size:12.5px;font-weight:bold;letter-spacing:1px;color:var(--purp);text-transform:uppercase;margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;flex:1;}
+  .card h3{margin:0 0 8px;font-family:Cambria,serif;font-size:17px;color:var(--navy);}
+  .card p{font-size:14px;margin:0 0 10px;}
+  .eq{font-family:Cambria,serif;font-size:18px;color:var(--navy);background:var(--light);border-radius:6px;padding:7px 12px;display:inline-block;margin:2px 0 8px;font-weight:bold;}
+  .defs{margin:4px 0 10px;padding:0;list-style:none;}
+  .defs li{font-size:13.5px;color:var(--slate);margin:4px 0;line-height:1.45;padding-left:14px;position:relative;}
+  .defs li::before{content:"•";position:absolute;left:2px;color:var(--purp);}
+  .defs b{color:var(--navy);font-family:Cambria,serif;}
+  table.dist{border-collapse:collapse;margin:6px 0 10px;font-size:13.5px;}
+  table.dist th,table.dist td{border:1px solid var(--line);padding:5px 12px;text-align:center;}
+  table.dist th{background:var(--light);color:var(--navy);font-family:Cambria;font-weight:bold;}
+  table.dist tr.lit td{background:#EAF0F8;}
+  table.dist tr.glow td{animation:cellpulse .55s ease;background:#D3E0F5;}
+  table.dist tr.lit td.prod,table.dist tr.glow td.prod{color:var(--navy);font-weight:bold;}
+  @keyframes cellpulse{0%{background:#B9CEEE}55%{background:#E6EEFA}100%{background:#D3E0F5}}
+  .sumline{background:var(--light);border-radius:8px;padding:9px 12px;margin:4px 0 6px;font-size:14.5px;font-family:Cambria,serif;min-height:22px;}
+  .answer-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+  input[type=number]{font-family:Cambria;font-size:16px;width:130px;padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;}
+  .unit{color:var(--mut);font-size:14px;}
+  button{font-family:Calibri;font-size:14px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 15px;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--navy);}
+  button:disabled{opacity:.4;cursor:default;}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:12px;}
+  .feedback{margin-top:10px;font-size:13px;line-height:1.5;border-radius:8px;padding:9px 12px;display:none;}
+  .feedback.ok{display:block;background:#E8F3EC;border:1px solid var(--green);color:#1c4c31;}
+  .feedback.no{display:block;background:#FBECE9;border:1px solid var(--terra);color:#7a2e22;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.on{background:var(--navy);}
+  .legend{font-size:12.5px;color:var(--mut);margin-top:6px;}
+  .legend span{margin-right:14px;} .sw{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-2px;margin-right:4px;}
+  b.term{color:var(--navy);}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  .solution{margin-top:9px;font-size:13.5px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Molecular weight of a polymer</h1>
+  <p class="sub">A polymer isn't one chain length — it's a distribution. Learn the two averages and the chain length, then compute them for the sample shown.</p>
+
+  <div class="stage">
+    <div class="canvaswrap">
+      <canvas id="cv" width="720" height="430" role="img" aria-label="Bar chart of the sample's molecular-weight distribution"></canvas>
+      <div class="legend"><span><span class="sw" style="background:var(--steel)"></span>number fraction xᵢ (by count)</span><span><span class="sw" style="background:var(--amber)"></span>weight fraction wᵢ (by mass)</span></div>
+    </div>
+    <div class="panel">
+      <div class="step" id="stepLabel">Step 1 of 6</div>
+      <div class="card" id="card"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+  <p class="legend" style="margin-top:12px"><b class="term">Why it matters:</b> molecular weight controls a polymer's strength, melt viscosity, and glass-transition temperature — so engineers report both an average and how wide the spread is.</p>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
+
+// polypropylene sample distribution
+const bins=[{M:20000,x:0.20,w:0.1212},{M:30000,x:0.40,w:0.3636},{M:40000,x:0.30,w:0.3636},{M:50000,x:0.10,w:0.1515}];
+const Mn=33000, Mw=35455, mer=42.08, DP=Mn/mer;   // 784
+
+// ---- module-level state (persists across re-renders) ----
+let stage=0, mnIdx=0, solvedMn=false;
+let answers={Mw:'',DP:''};
+let feedback={Mw:null,DP:null};
+let attempts={Mw:0,DP:0};
+let revealed={Mw:false,DP:false};
+let solved={Mw:false,DP:false};
+const solText={
+ Mw:'M̄w = Σ wᵢ·Mᵢ = 0.1212(20,000)+0.3636(30,000)+0.3636(40,000)+0.1515(50,000) = <b>35,455 g/mol</b>.',
+ DP:'DP = M̄n / m = 33,000 / 42.08 ≈ <b>784 repeat units</b>.'
+};
+const stageKey=st=>({3:'Mw',4:'DP'})[st]||null;
+
+function tbl(hi){
+ const hx=hi==='x'?' style="background:#EAF0F8"':'', hw=hi==='w'?' style="background:#FBF1E3"':'';
+ let t='<table class="dist"><tr><th>Mᵢ (g/mol)</th><th'+hx+'>xᵢ</th><th'+hw+'>wᵢ</th></tr>';
+ bins.forEach(b=>{ t+='<tr><td>'+b.M.toLocaleString()+'</td><td'+hx+'>'+b.x.toFixed(2)+'</td><td'+hw+'>'+b.w.toFixed(2)+'</td></tr>'; });
+ return t+'</table>';
+}
+
+const stages=[
+ {html:`<h3>A polymer is a mixture of chain lengths</h3>
+   <p>As chains grow during polymerization they reach many different lengths, so a polymer has no single molecular weight — it has a <b>distribution</b> (the bars).</p>
+   <ul class="defs"><li>We summarize it with two <b>averages</b> (M̄n and M̄w) and a <b>spread</b>.</li></ul>
+   <p>We'll compute them for this sample, then find how long an average chain is.</p>`},
+ {html:`<h3>Part 1 · Two ways to weight the average</h3>
+   <ul class="defs">
+     <li><b>Mᵢ</b> — the mean molecular weight of size-range i (g/mol)</li>
+     <li><b>xᵢ</b> — number fraction: the share of <b>chains</b> in range i (by count)</li>
+     <li><b>wᵢ</b> — weight fraction: the share of the total <b>mass</b> in range i</li>
+   </ul>
+   ${tbl('')}
+   <p>Both columns describe the same sample and each set of fractions sums to 1 (the wᵢ shown are rounded). The wᵢ are the mass shares implied by the xᵢ and Mᵢ: heavier chains carry more mass than their numbers suggest — which is why the two averages differ.</p>`},
+ {html:`<h3>Part 2 · Number-average M̄n — build the sum</h3>
+   <div class="eq">M̄n = Σ xᵢ·Mᵢ</div>
+   <p>Weight each Mᵢ by its number fraction xᵢ. Click <b>Add next term</b> to light up each row and total them up:</p>
+   <div id="mnTable"></div>
+   <div class="sumline" id="mnSum"></div>
+   <div class="nav" style="justify-content:flex-start"><button id="mnNext">Add next term ▸</button><button class="ghost" id="mnReset">Reset</button></div>`},
+ {html:`<h3>Part 3 · Weight-average M̄w — your turn</h3>
+   <div class="eq">M̄w = Σ wᵢ·Mᵢ</div>
+   <p>Same recipe you just walked through, but weight by the <b>mass fraction wᵢ</b>, so heavy chains count more. Compute M̄w (g/mol):</p>
+   ${tbl('w')}
+   <label class="sr-only" for="ansMw">Weight-average molecular weight M-bar-w, in grams per mole</label>
+   <div class="answer-row"><input type="number" id="ansMw" step="100" placeholder="M̄w = ?"> <span class="unit">g/mol</span><button id="checkMw">Check</button></div>
+   <div class="feedback" id="fbMw" aria-live="polite"></div>
+   <div id="hintMw"></div>`},
+ {html:`<h3>Part 4 · Degree of polymerization — your turn</h3>
+   <ul class="defs">
+     <li><b>DP</b> (n) — how many repeat units (mers) are in an average chain</li>
+     <li><b>mer mass m</b> — the mass of one repeat unit; polypropylene (C₃H₆) has m = 42.08 g/mol</li>
+   </ul>
+   <div class="eq">DP = M̄n / m</div>
+   <p>Compute the degree of polymerization (use M̄n = 33,000):</p>
+   <label class="sr-only" for="ansDP">Degree of polymerization, dimensionless</label>
+   <div class="answer-row"><input type="number" id="ansDP" step="1" placeholder="DP = ?"><button id="checkDP">Check</button></div>
+   <div class="feedback" id="fbDP" aria-live="polite"></div>
+   <div id="hintDP"></div>`},
+ {html:`<h3>What these numbers tell you</h3>
+   <ul class="defs">
+     <li>M̄n = 33,000 g/mol, M̄w = 35,455 g/mol. Because heavy chains carry extra mass, <b>M̄w ≥ M̄n</b> always.</li>
+     <li><b>Polydispersity</b> PDI = M̄w/M̄n = 35,455/33,000 = <b>1.07</b> — how wide the distribution is (1.0 would mean every chain identical).</li>
+     <li>An average chain is about <b>784 repeat units</b> long. Higher molecular weight → higher strength, melt viscosity, and Tg, up to a plateau.</li>
+   </ul>`}
+];
+
+// ---- Step 2 click-through helpers ----
+function mnTableHTML(k){
+ let t='<table class="dist"><tr><th>Mᵢ (g/mol)</th><th>xᵢ</th><th>xᵢ × Mᵢ</th></tr>';
+ bins.forEach((b,i)=>{ const on=i<k, cur=i===k-1;
+   const cls=cur?' class="glow"':(on?' class="lit"':'');
+   const prod=on?(b.x*b.M).toLocaleString():'';
+   t+='<tr'+cls+'><td>'+b.M.toLocaleString()+'</td><td>'+b.x.toFixed(2)+'</td><td class="prod">'+prod+'</td></tr>'; });
+ return t+'</table>';
+}
+function mnSumHTML(k){
+ if(k===0) return '<span style="color:var(--mut)">Click “Add next term ▸” to add the first row.</span>';
+ let run=0, parts=[];
+ for(let i=0;i<k;i++){ run+=bins[i].x*bins[i].M; parts.push((bins[i].x*bins[i].M).toLocaleString()); }
+ let s='running total: '+parts.join(' + ')+' = <b>'+run.toLocaleString()+'</b>';
+ if(k>=bins.length){ s+=' &nbsp;→&nbsp; <b style="color:var(--green)">M̄n = 33,000 g/mol</b>'; }
+ return s;
+}
+function updateMnWalk(){
+ const t=document.getElementById('mnTable'); if(t) t.innerHTML=mnTableHTML(mnIdx);
+ const s=document.getElementById('mnSum'); if(s) s.innerHTML=mnSumHTML(mnIdx);
+}
+
+const CW=720, CH=430, M={l:56,r:18,t:40,b:52};
+const X0=15000,X1=55000,Y1=0.45;
+const px=v=>M.l+(v-X0)/(X1-X0)*(CW-M.l-M.r);
+const py=f=>CH-M.b-(f/Y1)*(CH-M.t-M.b);
+function ariaLabel(){
+ if(stage<=0) return 'Bar chart: the molecular-weight distribution of the sample; molecular weight from 20k to 50k g/mol on the horizontal axis, fraction on the vertical axis.';
+ let s='Bar chart of the sample distribution. Blue bars show the number fraction xᵢ at 20k, 30k, 40k and 50k g/mol.';
+ if(stage>=3) s+=' Amber bars show the weight fraction wᵢ, shifted toward the heavier chains.';
+ if(solvedMn) s+=' A dashed line marks M̄n = 33,000 g/mol.';
+ if(solved.Mw) s+=' A dashed line marks M̄w = 35,455 g/mol.';
+ return s;
+}
+
+function draw(){
+ const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||720;
+ cv.width=cssW*dpr; cv.height=cssW*(CH/CW)*dpr; ctx.setTransform((cssW/CW)*dpr,0,0,(cssW/CW)*dpr,0,0);
+ ctx.clearRect(0,0,CW,CH);
+ cv.setAttribute('aria-label',ariaLabel());
+ ctx.fillStyle=CSS.mut; ctx.textAlign='center'; ctx.font='13px Calibri'; ctx.fillText('the molecular-weight distribution of the sample',360,24);
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(M.l,M.t); ctx.lineTo(M.l,430-M.b); ctx.lineTo(720-M.r,430-M.b); ctx.stroke();
+ ctx.fillStyle=CSS.mut; ctx.textAlign='right'; ctx.font='11px Calibri';
+ for(let f=0;f<=0.4;f+=0.1){ const y=py(f); ctx.fillText(f.toFixed(1),M.l-6,y+4); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(M.l,y); ctx.lineTo(720-M.r,y); ctx.stroke(); }
+ ctx.textAlign='center'; ctx.fillStyle=CSS.mut;
+ bins.forEach(b=>ctx.fillText((b.M/1000)+'k',px(b.M),430-M.b+16));
+ ctx.fillStyle=CSS.slate; ctx.font='12.5px Calibri'; ctx.fillText('molecular weight  Mᵢ  (g/mol)  →',360,430-8);
+ ctx.save(); ctx.translate(15,(M.t+430-M.b)/2); ctx.rotate(-Math.PI/2); ctx.fillText('fraction',0,0); ctx.restore();
+ const bw=17;
+ bins.forEach((b,i)=>{
+   if(stage>=1){ const x=px(b.M)-bw-1, y=py(b.x); ctx.fillStyle=CSS.steel; ctx.fillRect(x,y,bw,(430-M.b)-y);
+     if(stage===2 && i<mnIdx){ ctx.strokeStyle=CSS.amber; ctx.lineWidth=(i===mnIdx-1)?3.2:1.8; ctx.strokeRect(x-1,y-1,bw+2,(430-M.b)-y+1); } }
+   if(stage>=3){ const x=px(b.M)+1, y=py(b.w); ctx.fillStyle=CSS.amber; ctx.fillRect(x,y,bw,(430-M.b)-y); }
+ });
+ const mark=(v,color,lab,ytop)=>{ ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.beginPath(); ctx.moveTo(px(v),M.t); ctx.lineTo(px(v),430-M.b); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=color; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText(lab,px(v),ytop); };
+ if(solvedMn) mark(Mn,CSS.steel,'M̄n = 33,000',M.t-4);
+ if(solved.Mw) mark(Mw,CSS.amber,'M̄w = 35,455',M.t-22);
+}
+
+function render(){
+ document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
+ document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
+ const gated=(stage===2&&!solvedMn)||(key!==null&&!(solved[key]||revealed[key]));
+ let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
+ if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
+ else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
+ nav+=`</div>`;
+ document.getElementById('card').insertAdjacentHTML('beforeend',nav);
+ let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
+ document.getElementById('dots').innerHTML=dh;
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; mnIdx=0; solvedMn=false; answers={Mw:'',DP:''}; feedback={Mw:null,DP:null}; attempts={Mw:0,DP:0}; revealed={Mw:false,DP:false}; solved={Mw:false,DP:false}; render(); };
+ const b2=document.getElementById('checkMw'); if(b2) b2.onclick=checkMw;
+ const b3=document.getElementById('checkDP'); if(b3) b3.onclick=checkDP;
+ const mN=document.getElementById('mnNext'); if(mN) mN.onclick=()=>{ if(mnIdx<bins.length){ mnIdx++; updateMnWalk(); if(mnIdx>=bins.length){ solvedMn=true; updateNext(); } draw(); } };
+ const mR=document.getElementById('mnReset'); if(mR) mR.onclick=()=>{ mnIdx=0; solvedMn=false; updateMnWalk(); updateNext(); draw(); };
+ if(stage===2) updateMnWalk();
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({Mw:checkMw,DP:checkDP})[key](); } }; }
+   applyStepState(key);
+ }
+ draw();
+}
+function updateNext(){ const nx=document.getElementById('next'); if(!nx) return; if(stage===2){ nx.disabled=!solvedMn; return; } const key=stageKey(stage); if(!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){
+     hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>';
+     const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); };
+   } else hint.innerHTML='';
+ }
+ updateNext();
+}
+function checkMw(){ const raw=document.getElementById('ansMw').value; answers.Mw=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.Mw={cls:'no',html:'Enter a number (in g/mol).'}; applyStepState('Mw'); return; }
+ const near=(t,tol)=>Math.abs(v-t)<tol;
+ if(near(35455,300)){ solved.Mw=true; feedback.Mw={cls:'ok',html:'✓ Correct — M̄w = 0.1212(20k)+0.3636(30k)+0.3636(40k)+0.1515(50k) = <b>35,455 g/mol</b>. Notice M̄w > M̄n. Click Next.'}; }
+ else { attempts.Mw++;
+   if(near(33000,400)) feedback.Mw={cls:'no',html:'That is M̄n — you used the <b>number fractions xᵢ</b>. M̄w uses the <b>weight fractions wᵢ</b>.'};
+   else if(near(35000,150)) feedback.Mw={cls:'no',html:'That is just the unweighted mean of the four M values (0.25×(20+30+40+50)k). Weight each Mᵢ by its mass fraction wᵢ instead.'};
+   else feedback.Mw={cls:'no',html:'Not quite. M̄w = Σ wᵢMᵢ = 0.1212(20,000)+0.3636(30,000)+0.3636(40,000)+0.1515(50,000).'};
+ }
+ applyStepState('Mw'); draw(); }
+function checkDP(){ const raw=document.getElementById('ansDP').value; answers.DP=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.DP={cls:'no',html:'Enter a number.'}; applyStepState('DP'); return; }
+ const near=(t,tol)=>Math.abs(v-t)<tol;
+ if(near(784,5)){ solved.DP=true; feedback.DP={cls:'ok',html:'✓ Correct — DP = M̄n/m = 33,000 / 42.08 ≈ <b>784 repeat units</b>. Click Next.'}; }
+ else { attempts.DP++;
+   if(near(843,6)) feedback.DP={cls:'no',html:'You used M̄w. Degree of polymerization is based on the <b>number</b>-average: DP = M̄n/m.'};
+   else if(v>100000) feedback.DP={cls:'no',html:'You multiplied. DP = M̄n <b>÷</b> mer mass = 33,000 / 42.08.'};
+   else feedback.DP={cls:'no',html:'Not quite. DP = M̄n / m = 33,000 / 42.08.'};
+ }
+ applyStepState('DP'); draw(); }
+window.addEventListener('resize',draw);
+render();
+</script>
+</body>
+</html>

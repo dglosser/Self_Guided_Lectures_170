@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equilibrium Vacancy Concentration (Lecture 5s)</title>
+<style>
+  :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate);font-family:Calibri,'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 40px;}
+  h1{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:25px;margin:2px 0 2px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 14px;}
+  .stage{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:18px;flex-wrap:wrap;}
+  .canvaswrap{flex:1 1 500px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .panel{flex:1 1 350px;min-width:305px;display:flex;flex-direction:column;}
+  .step{font-size:12.5px;font-weight:bold;letter-spacing:1px;color:var(--purp);text-transform:uppercase;margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 17px;flex:1;}
+  .card h3{margin:0 0 8px;font-family:Cambria,serif;font-size:18px;color:var(--navy);}
+  .card p{font-size:14.5px;margin:0 0 10px;}
+  .eq{font-family:Cambria,serif;font-size:19px;color:var(--navy);background:var(--light);border-radius:6px;padding:8px 13px;display:inline-block;margin:2px 0 9px;font-weight:bold;}
+  .defs{margin:4px 0 10px;padding:0;list-style:none;}
+  .defs li{font-size:14px;color:var(--slate);margin:5px 0;line-height:1.5;padding-left:15px;position:relative;}
+  .defs li::before{content:"•";position:absolute;left:2px;color:var(--purp);}
+  .defs b{color:var(--navy);font-family:Cambria,serif;}
+  .given{background:var(--light);border-radius:8px;padding:9px 13px;margin:6px 0 10px;font-size:13.5px;line-height:1.7;}
+  .given b{color:var(--navy);font-family:Cambria,serif;}
+  .answer-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  input[type=number]{font-family:Cambria;font-size:17px;width:105px;padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;}
+  .unit{color:var(--slate);font-size:15px;font-family:Cambria,serif;}
+  button{font-family:Calibri;font-size:14.5px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--navy);}
+  button:disabled{opacity:.4;cursor:default;}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:13px;}
+  .feedback{margin-top:11px;font-size:13.5px;line-height:1.55;border-radius:8px;padding:10px 13px;display:none;}
+  .feedback.ok{display:block;background:#E8F3EC;border:1px solid var(--green);color:#1c4c31;}
+  .feedback.no{display:block;background:#FBECE9;border:1px solid var(--terra);color:#7a2e22;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.on{background:var(--navy);}
+  .legend{font-size:13px;color:var(--mut);margin-top:8px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  .solution{margin-top:9px;font-size:13.5px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+  b.term{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Equilibrium vacancy concentration</h1>
+  <p class="sub">Every crystal holds some empty lattice sites, and their number climbs steeply with temperature. Work out how many vacancies are in copper at 1000&nbsp;&deg;C.</p>
+
+  <div class="stage">
+    <div class="canvaswrap">
+      <canvas id="cv" width="720" height="430" role="img" aria-label="Illustration of a crystal lattice containing vacancies"></canvas>
+      <div class="legend" id="capt" aria-live="polite">A vacancy is a missing atom. Warmer crystals hold exponentially more of them.</div>
+    </div>
+    <div class="panel">
+      <div class="step" id="stepLabel">Step 1 of 7</div>
+      <div class="card" id="card"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
+
+// Copper at 1000 C
+const NA=6.022e23, rho=8.4, A=63.5, Qv=0.90, k=8.62e-5;
+const T_K=1273, N=NA*rho/A, kT=k*T_K, xExp=Qv/kT, ratio=Math.exp(-xExp), Nv=N*ratio;
+
+// ---- module-level state (persists across re-renders) ----
+let stage=0;
+let answers={T:'',N:'',X:'',R:'',Nv:''};
+let feedback={T:null,N:null,X:null,R:null,Nv:null};
+let attempts={T:0,N:0,X:0,R:0,Nv:0};
+let revealed={T:false,N:false,X:false,R:false,Nv:false};
+let solved={T:false,N:false,X:false,R:false,Nv:false};
+const solText={
+ T:'T(K) = T(&deg;C) + 273 = 1000 + 273 = <b>1273 K</b>.',
+ N:'N = N<sub>A</sub>&rho;/A = (6.022&times;10&sup2;&sup3;)(8.4)/63.5 = <b>8.0&times;10&sup2;&sup2; atoms/cm&sup3;</b>.',
+ X:'kT = (8.62&times;10<sup>&minus;5</sup>)(1273) = 0.110 eV, so Q<sub>v</sub>/kT = 0.90 / 0.110 = <b>8.2</b>.',
+ R:'N<sub>v</sub>/N = exp(&minus;8.2) = <b>2.7&times;10<sup>&minus;4</sup></b>.',
+ Nv:'N<sub>v</sub> = N &times; (N<sub>v</sub>/N) = (8.0&times;10&sup2;&sup2;)(2.7&times;10<sup>&minus;4</sup>) = <b>2.2&times;10<sup>19</sup> vacancies/cm&sup3;</b>.'
+};
+const stageKey=st=>({1:'T',2:'N',3:'X',4:'R',5:'Nv'})[st]||null;
+
+const GIVEN=`<div class="given"><b>Given (copper) — what each symbol means:</b>
+<ul class="defs" style="margin:7px 0 0">
+  <li><b>N<sub>A</sub></b> &mdash; Avogadro's number (atoms in one mole) = 6.022&times;10<sup>23</sup> /mol</li>
+  <li><b>&rho;</b> (rho) &mdash; mass density (mass per unit volume) = 8.4 g/cm&sup3;</li>
+  <li><b>A</b> &mdash; atomic weight (mass of one mole of atoms) = 63.5 g/mol</li>
+  <li><b>Q<sub>v</sub></b> &mdash; vacancy formation energy (energy to make one vacancy) = 0.90 eV/atom</li>
+  <li><b>k</b> &mdash; Boltzmann's constant (links temperature to energy) = 8.62&times;10<sup>&minus;5</sup> eV/K</li>
+  <li><b>T</b> &mdash; temperature = 1000 &deg;C</li>
+</ul></div>`;
+
+const stages=[
+ {html:`<h3>Why crystals are never perfect</h3>
+   <p>Even a pure, well-grown crystal contains empty lattice sites called <b>vacancies</b>. Making one costs energy Q<sub>v</sub>, but disorder (entropy) favors having some — so at any temperature above absolute zero there is an equilibrium number.</p>
+   <ul class="defs"><li>The count rises <b>exponentially</b> with temperature, which is why heat treatment, diffusion, and creep all speed up when things get hot.</li></ul>
+   <p>Let's compute how many vacancies sit in copper at 1000&nbsp;&deg;C.</p>`},
+ {html:`<h3>Part 1 &middot; Put temperature in kelvin</h3>
+   ${GIVEN}
+   <p>The vacancy formula lives in an exponential, so temperature <b>must</b> be absolute (kelvin), never &deg;C.</p>
+   <ul class="defs"><li><b>T</b> &mdash; <b>absolute (thermodynamic) temperature</b>, measured in <b>kelvin (K)</b>; it starts at absolute zero, so it is never negative</li></ul>
+   <div class="eq">T(K) = T(&deg;C) + 273</div>
+   <label class="sr-only" for="ansT">Part 1: temperature in kelvin</label>
+   <div class="answer-row"><span class="unit">T =</span><input type="number" id="ansT" placeholder="?"> <span class="unit">K</span><button id="checkT">Check</button></div>
+   <div class="feedback" id="fbT" aria-live="polite"></div>
+   <div id="hintT"></div>`},
+ {html:`<h3>Part 2 &middot; How many atom sites? (site density N)</h3>
+   <p>First we need the number of lattice sites per unit volume &mdash; essentially atoms per cm&sup3;.</p>
+   <div class="eq">N = N<sub>A</sub> &rho; / A</div>
+   <ul class="defs">
+     <li><b>N</b> &mdash; <b>number density of atom sites</b>: how many atoms sit in each cm&sup3; of the crystal (the quantity we're solving for)</li>
+     <li><b>N<sub>A</sub></b> &mdash; <b>Avogadro's number</b>: the number of atoms in one mole of a substance = 6.022&times;10<sup>23</sup> per mole</li>
+     <li><b>&rho;</b> (rho) &mdash; <b>mass density</b>: mass of material per unit volume; for copper, 8.4 g/cm&sup3;</li>
+     <li><b>A</b> &mdash; <b>atomic weight</b> (molar mass): the mass of one mole of atoms; for copper, 63.5 g/mol</li>
+   </ul>
+   <p>Compute N (enter just the number in front):</p>
+   <label class="sr-only" for="ansN">Part 2: site density N, coefficient of ten to the twenty-second atoms per cubic centimeter</label>
+   <div class="answer-row"><span class="unit">N =</span><input type="number" id="ansN" step="0.1" placeholder="?"> <span class="unit">&times; 10<sup>22</sup> atoms/cm&sup3;</span><button id="checkN">Check</button></div>
+   <div class="feedback" id="fbN" aria-live="polite"></div>
+   <div id="hintN"></div>`},
+ {html:`<h3>Part 3 &middot; The exponent Q<sub>v</sub> / kT</h3>
+   <p>The fraction of sites that are vacant is set by the <b>Boltzmann factor</b> exp(&minus;Q<sub>v</sub>/kT). Build the exponent first.</p>
+   <ul class="defs">
+     <li><b>Q<sub>v</sub></b> &mdash; <b>vacancy formation energy</b>: the energy needed to create one vacancy = 0.90 eV/atom</li>
+     <li><b>k</b> &mdash; <b>Boltzmann's constant</b>: converts a temperature into an energy = 8.62&times;10<sup>&minus;5</sup> eV/K</li>
+     <li><b>T</b> &mdash; absolute temperature = 1273 K (from Step 1)</li>
+     <li><b>eV</b> &mdash; the <b>electron-volt</b>, a small unit of energy</li>
+     <li>so <b>kT</b> = (8.62&times;10<sup>&minus;5</sup>)(1273) = <b>0.110 eV</b> &mdash; the thermal energy available at this temperature</li>
+   </ul>
+   <div class="eq">Q<sub>v</sub> / kT = 0.90 / 0.110</div>
+   <label class="sr-only" for="ansX">Part 3: the exponent Q sub v divided by kT</label>
+   <div class="answer-row"><span class="unit">Q<sub>v</sub>/kT =</span><input type="number" id="ansX" step="0.1" placeholder="?"><button id="checkX">Check</button></div>
+   <div class="feedback" id="fbX" aria-live="polite"></div>
+   <div id="hintX"></div>`},
+ {html:`<h3>Part 4 &middot; The vacancy fraction N<sub>v</sub>/N</h3>
+   <div class="eq">N<sub>v</sub>/N = exp(&minus;Q<sub>v</sub>/kT) = exp(&minus;8.2)</div>
+   <ul class="defs">
+     <li><b>N<sub>v</sub>/N</b> &mdash; the <b>vacancy fraction</b>: number of vacancies divided by the total number of sites &mdash; i.e., the fraction of lattice sites that are empty (a pure number, no units)</li>
+     <li><b>exp(x)</b> &mdash; the exponential function e<sup>x</sup></li>
+   </ul>
+   <p>Because the exponent is negative, it's a small number less than 1.</p>
+   <label class="sr-only" for="ansR">Part 4: vacancy fraction, coefficient of ten to the minus four</label>
+   <div class="answer-row"><span class="unit">N<sub>v</sub>/N =</span><input type="number" id="ansR" step="0.1" placeholder="?"> <span class="unit">&times; 10<sup>&minus;4</sup></span><button id="checkR">Check</button></div>
+   <div class="feedback" id="fbR" aria-live="polite"></div>
+   <div id="hintR"></div>`},
+ {html:`<h3>Part 5 &middot; The vacancy count N<sub>v</sub></h3>
+   <ul class="defs">
+     <li><b>N<sub>v</sub></b> &mdash; <b>number density of vacancies</b>: how many empty sites per cm&sup3; (the quantity we're solving for)</li>
+     <li><b>N</b> &mdash; atom-site density = 8.0&times;10<sup>22</sup> /cm&sup3; (from Step 2)</li>
+     <li><b>N<sub>v</sub>/N</b> &mdash; vacancy fraction = 2.7&times;10<sup>&minus;4</sup> (from Step 4)</li>
+   </ul>
+   <p>Multiply the total site density by the fraction that are empty.</p>
+   <div class="eq">N<sub>v</sub> = N &times; (N<sub>v</sub>/N) = (8.0&times;10<sup>22</sup>)(2.7&times;10<sup>&minus;4</sup>)</div>
+   <label class="sr-only" for="ansNv">Part 5: vacancy count, coefficient of ten to the nineteenth vacancies per cubic centimeter</label>
+   <div class="answer-row"><span class="unit">N<sub>v</sub> =</span><input type="number" id="ansNv" step="0.1" placeholder="?"> <span class="unit">&times; 10<sup>19</sup> vacancies/cm&sup3;</span><button id="checkNv">Check</button></div>
+   <div class="feedback" id="fbNv" aria-live="polite"></div>
+   <div id="hintNv"></div>`},
+ {html:`<h3>What the number tells you</h3>
+   <ul class="defs">
+     <li>At 1000&nbsp;&deg;C copper holds about <b>2.2&times;10<sup>19</sup></b> vacancies per cm&sup3; &mdash; roughly <b>1 empty site in every 3,600</b>.</li>
+     <li>Cool to room temperature and the exponent jumps to &minus;35: N<sub>v</sub>/N &asymp; <b>6&times;10<sup>&minus;16</sup></b> &mdash; essentially none.</li>
+     <li>That exponential sensitivity is the engine behind <b>diffusion, heat treatment, and creep</b>: raise T a few hundred degrees and atoms suddenly have somewhere to move.</li>
+   </ul>`}
+];
+
+// ---------- canvas ----------
+let W=720,H=430;
+const PL=72,PR=22,PT=44,PB=56;                 // plot margins
+const Tmin=300,Tmax=1400, Lhi=-3, Llo=-16.5;   // x: T(K), y: log10 fraction
+const xT=T=>PL+(T-Tmin)/(Tmax-Tmin)*(W-PL-PR);
+const yL=l=>PT+(Lhi-l)/(Lhi-Llo)*(H-PT-PB);
+const log10=v=>Math.log(v)/Math.LN10;
+const ratioAt=T=>Math.exp(-Qv/(k*T));
+
+function drawLattice(){
+ ctx.fillStyle=CSS.mut; ctx.font='14px Calibri'; ctx.textAlign='center';
+ ctx.fillText('a crystal always contains some empty sites — vacancies',360,26);
+ const cols=11, rows=6, x0=155, y0=90, dx=41, dy=41, r=13, vac=[[4,0],[8,4]];
+ for(let i=0;i<rows;i++)for(let j=0;j<cols;j++){
+   const cx=x0+j*dx, cy=y0+i*dy, isV=vac.some(v=>v[0]===j&&v[1]===i);
+   if(isV){ ctx.strokeStyle=CSS.terra; ctx.setLineDash([4,3]); ctx.lineWidth=2.2; ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+   else { ctx.fillStyle=CSS.steel; ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.fill(); }
+ }
+ const lv=vac[0], lx=x0+lv[0]*dx, ly=y0+lv[1]*dy;
+ ctx.strokeStyle=CSS.terra; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(lx,ly-r); ctx.lineTo(lx,ly-27); ctx.stroke();
+ ctx.fillStyle=CSS.terra; ctx.font='bold 14px Calibri'; ctx.textAlign='center'; ctx.fillText('vacancy (missing atom)',lx,ly-33);
+ ctx.fillStyle=CSS.slate; ctx.font='14px Calibri'; ctx.fillText('Higher temperature → more vacancies. The question is how many.',360,y0+rows*dy+20);
+}
+function drawCurve(){
+ ctx.fillStyle=CSS.mut; ctx.font='14px Calibri'; ctx.textAlign='center';
+ ctx.fillText('vacancy fraction climbs exponentially with temperature',360,24);
+ // axes
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,H-PB); ctx.lineTo(W-PR,H-PB); ctx.stroke();
+ // y grid + labels (decades)
+ ctx.font='12.5px Calibri';
+ for(let l=-4;l>=-16;l-=4){ const y=yL(l); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(W-PR,y); ctx.stroke();
+   ctx.fillStyle=CSS.mut; ctx.textAlign='right'; ctx.fillText('10'+sup(l),PL-7,y+4); }
+ // x labels
+ ctx.textAlign='center'; ctx.fillStyle=CSS.mut;
+ [300,600,900,1200].forEach(T=>ctx.fillText(T,xT(T),H-PB+18));
+ ctx.fillStyle=CSS.slate; ctx.font='14px Calibri'; ctx.fillText('temperature  T  (K)',360,H-10);
+ ctx.save(); ctx.translate(18,(PT+H-PB)/2); ctx.rotate(-Math.PI/2); ctx.fillText('vacancy fraction  N_v / N',0,0); ctx.restore();
+ // curve
+ ctx.strokeStyle=CSS.steel; ctx.lineWidth=2.6; ctx.beginPath();
+ for(let T=Tmin;T<=Tmax;T+=5){ const y=yL(log10(ratioAt(T))); const x=xT(T); if(T===Tmin) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+ ctx.stroke();
+ // vertical T marker once T known
+ if(solved.T){ ctx.strokeStyle=CSS.amber; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.beginPath(); ctx.moveTo(xT(T_K),PT); ctx.lineTo(xT(T_K),H-PB); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.amber; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText('T = 1273 K',xT(T_K),H-PB+34); }
+ // solved point at 1273
+ if(solved.R){ const x=xT(T_K), y=yL(log10(ratio));
+   ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(x,y,6,0,2*Math.PI); ctx.fill();
+   ctx.fillStyle=CSS.terra; ctx.font='bold 14px Calibri'; ctx.textAlign='left';
+   ctx.fillText('N_v/N = 2.7 × 10⁻⁴',x-238,y+5); }
+ // room-temperature point in payoff
+ if(stage===6){ const x=xT(298), y=yL(log10(ratioAt(298)));
+   ctx.fillStyle=CSS.mut; ctx.beginPath(); ctx.arc(x,y,5,0,2*Math.PI); ctx.fill();
+   ctx.fillStyle=CSS.mut; ctx.font='13px Calibri'; ctx.textAlign='left'; ctx.fillText('room temp: ~6×10⁻¹⁶',x+8,y-6); }
+}
+function sup(l){ const m={'-4':'⁻⁴','-8':'⁻⁸','-12':'⁻¹²','-16':'⁻¹⁶'}; return m[String(l)]||''; }
+
+const ARIA={
+ lattice:'Illustration of a crystal lattice: a grid of atoms drawn as filled circles, with two empty sites (vacancies) shown as dashed open circles. One is labeled as a missing atom.',
+ curve:'Semi-log chart of the vacancy fraction N_v/N versus temperature T in kelvin. The curve climbs steeply as temperature rises. A vertical marker at 1273 K and the solved point (2.7 × 10⁻⁴), plus a room-temperature point, are added as you work through the parts.'
+};
+function updateCaption(){
+ const capt=document.getElementById('capt');
+ if(stage===0){ if(capt) capt.innerHTML='A vacancy is a missing atom. Warmer crystals hold exponentially more of them.'; cv.setAttribute('aria-label',ARIA.lattice); }
+ else { if(capt) capt.innerHTML='This semi-log plot shows the vacancy fraction N<sub>v</sub>/N rising exponentially with temperature; the marked point is copper at 1273&nbsp;K.'; cv.setAttribute('aria-label',ARIA.curve); }
+}
+
+function draw(){
+ const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||720;
+ cv.width=cssW*dpr; cv.height=cssW*(430/720)*dpr; ctx.setTransform((cssW/720)*dpr,0,0,(cssW/720)*dpr,0,0);
+ ctx.clearRect(0,0,W,H);
+ if(stage===0) drawLattice(); else drawCurve();
+ updateCaption();
+}
+
+function render(){
+ document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
+ document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
+ const gated=(key!==null) && !(solved[key]||revealed[key]);
+ let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
+ if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
+ else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
+ nav+=`</div>`;
+ document.getElementById('card').insertAdjacentHTML('beforeend',nav);
+ let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
+ document.getElementById('dots').innerHTML=dh;
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; answers={T:'',N:'',X:'',R:'',Nv:''}; feedback={T:null,N:null,X:null,R:null,Nv:null}; attempts={T:0,N:0,X:0,R:0,Nv:0}; revealed={T:false,N:false,X:false,R:false,Nv:false}; solved={T:false,N:false,X:false,R:false,Nv:false}; render(); };
+ wire('checkT',checkT); wire('checkN',checkN); wire('checkX',checkX); wire('checkR',checkR); wire('checkNv',checkNv);
+ // restore per-step state
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({T:checkT,N:checkN,X:checkX,R:checkR,Nv:checkNv})[key](); } }; }
+   applyStepState(key);
+ }
+ draw();
+}
+function wire(id,fn){ const b=document.getElementById(id); if(b) b.onclick=fn; }
+function updateNext(){ const key=stageKey(stage); const nx=document.getElementById('next'); if(!nx||!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){
+     hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>';
+     const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); };
+   } else hint.innerHTML='';
+ }
+ updateNext();
+}
+const near=(v,t,tol)=>Math.abs(v-t)<tol;
+
+function checkT(){ const raw=document.getElementById('ansT').value; answers.T=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.T={cls:'no',html:'Enter a number (in K).'}; applyStepState('T'); return; }
+ if(near(v,1273,3)){ solved.T=true; feedback.T={cls:'ok',html:'✓ Correct — 1000 + 273 = <b>1273 K</b>. Click Next.'}; }
+ else { attempts.T++;
+   if(near(v,1000,3)) feedback.T={cls:'no',html:'That\'s the Celsius value. Add 273 to convert to kelvin.'};
+   else if(near(v,727,3)) feedback.T={cls:'no',html:'You subtracted — kelvin is warmer: T(K) = T(°C) + 273.'};
+   else feedback.T={cls:'no',html:'Not quite. T(K) = 1000 + 273.'};
+ }
+ applyStepState('T'); draw(); }
+
+function checkN(){ const raw=document.getElementById('ansN').value; answers.N=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.N={cls:'no',html:'Enter the number in front of ×10²².'}; applyStepState('N'); return; }
+ if(near(v,8.0,0.3)){ solved.N=true; feedback.N={cls:'ok',html:'✓ Correct — N = (6.022×10²³)(8.4)/63.5 = <b>8.0×10²² atoms/cm³</b>. Click Next.'}; }
+ else { attempts.N++;
+   if(near(v,0.95,0.15)) feedback.N={cls:'no',html:'You left out the density. N = N<sub>A</sub> · <b>ρ</b> / A, and ρ = 8.4.'};
+   else feedback.N={cls:'no',html:'Not quite. N = (6.022×10²³)(8.4)/63.5 ≈ 8.0×10²².'};
+ }
+ applyStepState('N'); draw(); }
+
+function checkX(){ const raw=document.getElementById('ansX').value; answers.X=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.X={cls:'no',html:'Enter a number.'}; applyStepState('X'); return; }
+ if(near(v,8.2,0.25)){ solved.X=true; feedback.X={cls:'ok',html:'✓ Correct — 0.90 / 0.110 = <b>8.2</b>. Click Next.'}; }
+ else { attempts.X++;
+   if(near(v,10.4,0.4)) feedback.X={cls:'no',html:'You used T in °C. kT must use kelvin: kT = k(1273) = 0.110 eV.'};
+   else feedback.X={cls:'no',html:'Not quite. Q<sub>v</sub>/kT = 0.90 / 0.110 ≈ 8.2.'};
+ }
+ applyStepState('X'); draw(); }
+
+function checkR(){ const raw=document.getElementById('ansR').value; answers.R=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.R={cls:'no',html:'Enter the number in front of ×10⁻⁴.'}; applyStepState('R'); return; }
+ if(near(v,2.7,0.3)){ solved.R=true; feedback.R={cls:'ok',html:'✓ Correct — exp(−8.2) = <b>2.7×10⁻⁴</b>. Click Next.'}; }
+ else { attempts.R++;
+   if(v>100) feedback.R={cls:'no',html:'Check the sign of the exponent: it\'s exp(<b>−</b>8.2), a number smaller than 1.'};
+   else feedback.R={cls:'no',html:'Not quite. exp(−8.2) ≈ 2.7×10⁻⁴.'};
+ }
+ applyStepState('R'); draw(); }
+
+function checkNv(){ const raw=document.getElementById('ansNv').value; answers.Nv=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.Nv={cls:'no',html:'Enter the number in front of ×10¹⁹.'}; applyStepState('Nv'); return; }
+ if(near(v,2.2,0.25)){ solved.Nv=true; feedback.Nv={cls:'ok',html:'✓ Correct — (8.0×10²²)(2.7×10⁻⁴) = <b>2.2×10¹⁹ vacancies/cm³</b>. Click Next.'}; }
+ else { attempts.Nv++;
+   if(near(v,8.0,0.4)) feedback.Nv={cls:'no',html:'That\'s N. Multiply N by the fraction N<sub>v</sub>/N = 2.7×10⁻⁴.'};
+   else feedback.Nv={cls:'no',html:'Not quite. N<sub>v</sub> = (8.0×10²²)(2.7×10⁻⁴) ≈ 2.2×10¹⁹.'};
+ }
+ applyStepState('Nv'); draw(); }
+
+window.addEventListener('resize',draw);
+render();
+</script>
+</body>
+</html>

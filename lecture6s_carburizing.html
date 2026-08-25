@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carburizing — Non-Steady-State Diffusion (Lecture 6s)</title>
+<style>
+  :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate);font-family:Calibri,'Segoe UI',system-ui,sans-serif;line-height:1.45;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 20px 40px;}
+  h1{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:25px;margin:2px 0 2px;}
+  .sub{color:var(--mut);font-size:15px;margin:0 0 14px;}
+  .stage{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:18px;flex-wrap:wrap;}
+  .canvaswrap{flex:1 1 500px;min-width:320px;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:#fff;}
+  .panel{flex:1 1 355px;min-width:305px;display:flex;flex-direction:column;}
+  .step{font-size:12.5px;font-weight:bold;letter-spacing:1px;color:var(--purp);text-transform:uppercase;margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 17px;flex:1;}
+  .card h3{margin:0 0 8px;font-family:Cambria,serif;font-size:18px;color:var(--navy);}
+  .card p{font-size:14.5px;margin:0 0 10px;}
+  .eq{font-family:Cambria,serif;font-size:18px;color:var(--navy);background:var(--light);border-radius:6px;padding:9px 13px;display:block;margin:2px 0 10px;font-weight:bold;text-align:center;}
+  .defs{margin:4px 0 10px;padding:0;list-style:none;}
+  .defs li{font-size:13.8px;color:var(--slate);margin:5px 0;line-height:1.5;padding-left:15px;position:relative;}
+  .defs li::before{content:"•";position:absolute;left:2px;color:var(--purp);}
+  .defs b{color:var(--navy);font-family:Cambria,serif;}
+  .given{background:var(--light);border-radius:8px;padding:10px 14px;margin:6px 0 10px;font-size:13.5px;}
+  .given b{color:var(--navy);font-family:Cambria,serif;}
+  table.erf{border-collapse:collapse;margin:4px 0 10px;font-size:13.5px;}
+  table.erf th,table.erf td{border:1px solid var(--line);padding:5px 12px;text-align:center;}
+  table.erf th{background:var(--light);color:var(--navy);font-family:Cambria;font-weight:bold;}
+  table.erf td.hi{background:#FBF1E3;font-weight:bold;color:var(--navy);}
+  .answer-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  input[type=number]{font-family:Cambria;font-size:17px;width:110px;padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;}
+  .unit{color:var(--slate);font-size:15px;font-family:Cambria,serif;}
+  button{font-family:Calibri;font-size:14.5px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;}
+  button.ghost{background:#fff;color:var(--navy);}
+  button:disabled{opacity:.4;cursor:default;}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:13px;}
+  .feedback{margin-top:11px;font-size:13.5px;line-height:1.55;border-radius:8px;padding:10px 13px;display:none;}
+  .feedback.ok{display:block;background:#E8F3EC;border:1px solid var(--green);color:#1c4c31;}
+  .feedback.no{display:block;background:#FBECE9;border:1px solid var(--terra);color:#7a2e22;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .dot.on{background:var(--navy);}
+  .legend{font-size:13px;color:var(--mut);margin-top:8px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  .solution{margin-top:9px;font-size:13.5px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+  b.term{color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Carburizing: diffusion into a surface</h1>
+  <p class="sub">Carbon is soaked into the surface of a steel gear to harden it. Find the carbon concentration 0.50&nbsp;mm deep after 10&nbsp;hours.</p>
+
+  <div class="stage">
+    <div class="canvaswrap">
+      <canvas id="cv" width="720" height="430" role="img" aria-label="Carbon concentration versus depth profile"></canvas>
+      <div class="legend" id="capt" aria-live="polite">The surface stays carbon-rich; the concentration falls off with depth and the profile pushes deeper as time goes on.</div>
+    </div>
+    <div class="panel">
+      <div class="step" id="stepLabel">Step 1 of 6</div>
+      <div class="card" id="card"></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
+
+const C0=0.20, Cs=1.00, xdepth=5.0e-4, D=1.0e-11, tsec=10*3600;   // SI
+const Dt=D*tsec, z0=xdepth/(2*Math.sqrt(Dt));                     // 0.417
+function erf(x){ const s=x<0?-1:1; x=Math.abs(x); const t=1/(1+0.3275911*x);
+ const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return s*y; }
+const erf0=erf(z0), Cx=C0+(Cs-C0)*(1-erf0);                      // 0.44, 0.64
+
+// ---- module-level state (persists across re-renders) ----
+let stage=0;
+let answers={Z:'',E:'',C:''};
+let feedback={Z:null,E:null,C:null};
+let attempts={Z:0,E:0,C:0};
+let revealed={Z:false,E:false,C:false};
+let solved={Z:false,E:false,C:false};
+const solText={
+ Z:'z = x / (2&radic;(Dt)) = (5.0&times;10<sup>&minus;4</sup>) / (2 &times; 6.0&times;10<sup>&minus;4</sup>) = <b>0.417</b>.',
+ E:'erf &asymp; 0.4284 + (0.017/0.05)(0.4755 &minus; 0.4284) = 0.4284 + 0.34 &times; 0.0471 &asymp; <b>0.44</b>.',
+ C:'C<sub>x</sub> = 0.20 + (1.00 &minus; 0.20)(1 &minus; 0.44) = 0.20 + 0.80 &times; 0.56 = <b>0.64 wt% C</b>.'
+};
+const stageKey=st=>({2:'Z',3:'E',4:'C'})[st]||null;
+const TAU=2*Math.PI;
+
+const GIVEN=`<div class="given"><b>Given &mdash; what each symbol means:</b>
+<ul class="defs" style="margin:7px 0 0">
+  <li><b>C<sub>s</sub></b> &mdash; surface carbon concentration, held constant = 1.00 wt%</li>
+  <li><b>C<sub>0</sub></b> &mdash; initial carbon concentration in the steel (uniform) = 0.20 wt%</li>
+  <li><b>C<sub>x</sub></b> &mdash; carbon concentration at depth x after time t (what we solve for)</li>
+  <li><b>x</b> &mdash; depth below the surface = 0.50 mm = 5.0&times;10<sup>&minus;4</sup> m</li>
+  <li><b>D</b> &mdash; diffusion coefficient (how fast carbon moves) = 1.0&times;10<sup>&minus;11</sup> m&sup2;/s</li>
+  <li><b>t</b> &mdash; diffusion time = 10 h = 3.6&times;10<sup>4</sup> s</li>
+</ul></div>`;
+
+const stages=[
+ {html:`<h3>Hardening a surface by diffusion</h3>
+   <p>A steel part is packed in carbon and heated. Carbon atoms <b>diffuse</b> inward, so the surface becomes carbon-rich (hard and wear-resistant) while the core stays low-carbon (tough). The carbon amount at any depth keeps changing with time &mdash; this is <b>non-steady-state diffusion</b>.</p>
+   <ul class="defs"><li>We'll find the carbon concentration at one depth (0.50 mm) after 10 hours.</li></ul>`},
+ {html:`<h3>The diffusion model</h3>
+   <p>The solution of Fick's second law for a constant surface concentration is:</p>
+   <div class="eq">(C<sub>x</sub> &minus; C<sub>0</sub>) / (C<sub>s</sub> &minus; C<sub>0</sub>) = 1 &minus; erf(z), &nbsp; z = x / (2&radic;(Dt))</div>
+   ${GIVEN}
+   <ul class="defs">
+     <li><b>erf</b> &mdash; the <b>error function</b>, an S-shaped function of z that we read from a table (below, next step)</li>
+     <li><b>z</b> &mdash; a dimensionless "depth" that bundles x, D, and t together</li>
+   </ul>`},
+ {html:`<h3>Form the dimensionless depth z</h3>
+   <p>Everything must be in SI units so Dt comes out in m&sup2;. Work the denominator first.</p>
+   <div class="eq">z = x / (2&radic;(Dt))</div>
+   <ul class="defs">
+     <li><b>x</b> = 5.0&times;10<sup>&minus;4</sup> m &nbsp;·&nbsp; <b>D</b> = 1.0&times;10<sup>&minus;11</sup> m&sup2;/s &nbsp;·&nbsp; <b>t</b> = 3.6&times;10<sup>4</sup> s</li>
+     <li>Dt = (1.0&times;10<sup>&minus;11</sup>)(3.6&times;10<sup>4</sup>) = 3.6&times;10<sup>&minus;7</sup> m&sup2;, so &radic;(Dt) = 6.0&times;10<sup>&minus;4</sup> m</li>
+   </ul>
+   <label class="sr-only" for="ansZ">Dimensionless depth z</label>
+   <div class="answer-row"><span class="unit">z =</span><input type="number" id="ansZ" step="0.01" placeholder="?"><button id="checkZ">Check</button></div>
+   <div class="feedback" id="fbZ" aria-live="polite"></div>
+   <div id="hintZ"></div>`},
+ {html:`<h3>Read the error function erf(z)</h3>
+   <p>erf(z) is read from a table, but our z = 0.417 lands <b>between</b> two rows. <b>Interpolating</b> means estimating the in-between value by assuming erf runs in a straight line from one row to the next (see the picture at left).</p>
+   <table class="erf"><tr><th>z</th><th>erf(z)</th></tr>
+     <tr><td>0.35</td><td>0.3794</td></tr>
+     <tr><td class="hi">0.40</td><td class="hi">0.4284</td></tr>
+     <tr><td class="hi">0.45</td><td class="hi">0.4755</td></tr>
+     <tr><td>0.50</td><td>0.5205</td></tr>
+   </table>
+   <ul class="defs">
+     <li>z = 0.417 sits 0.417 &minus; 0.40 = <b>0.017</b> past the 0.40 row, and the rows are 0.05 apart.</li>
+     <li>Fraction of the way across: 0.017 / 0.05 = <b>0.34</b> (about a third).</li>
+     <li>Move that same 0.34 of the way up, from 0.4284 toward 0.4755:</li>
+   </ul>
+   <div class="eq">erf &asymp; 0.4284 + 0.34 &times; (0.4755 &minus; 0.4284)</div>
+   <label class="sr-only" for="ansE">Interpolated error function value, erf of 0.417</label>
+   <div class="answer-row"><span class="unit">erf(0.417) &asymp;</span><input type="number" id="ansE" step="0.01" placeholder="?"><button id="checkE">Check</button></div>
+   <div class="feedback" id="fbE" aria-live="polite"></div>
+   <div id="hintE"></div>`},
+ {html:`<h3>Solve for the concentration C<sub>x</sub></h3>
+   <p>Rearrange the model for C<sub>x</sub> and substitute.</p>
+   <div class="eq">C<sub>x</sub> = C<sub>0</sub> + (C<sub>s</sub> &minus; C<sub>0</sub>)(1 &minus; erf z)</div>
+   <ul class="defs">
+     <li><b>C<sub>0</sub></b> = 0.20 wt% &nbsp;·&nbsp; <b>C<sub>s</sub></b> = 1.00 wt% &nbsp;·&nbsp; <b>erf z</b> = 0.44, so <b>1 &minus; erf z</b> = 0.56</li>
+   </ul>
+   <label class="sr-only" for="ansC">Carbon concentration at depth, in weight percent</label>
+   <div class="answer-row"><span class="unit">C<sub>x</sub> =</span><input type="number" id="ansC" step="0.01" placeholder="?"> <span class="unit">wt% C</span><button id="checkC">Check</button></div>
+   <div class="feedback" id="fbC" aria-live="polite"></div>
+   <div id="hintC"></div>`},
+ {html:`<h3>What the profile tells you</h3>
+   <ul class="defs">
+     <li>At 0.50 mm deep the steel now holds about <b>0.64 wt% C</b> &mdash; up from 0.20, enough to harden.</li>
+     <li>The penetration depth grows with <b>&radic;(Dt)</b>, not t: to push the same concentration <b>twice</b> as deep you need <b>four times</b> the time.</li>
+     <li>Raising temperature raises D sharply (D = D<sub>0</sub>e<sup>&minus;Q/RT</sup>), so carburizing is done hot to keep the times practical.</li>
+   </ul>`}
+];
+
+// ---------- canvas: concentration-depth profile (720 x 430 coordinate space) ----------
+const CW=720, CH=430;
+const W=CW, H=CH;                                     // fixed coordinate space; never reassigned from cssW
+const PL=64,PR=22,PT=40,PB=54;
+const Xmax=1.5, Cmin=0.15, Cmax=1.05;                 // depth mm, conc wt%
+const px=mm=>PL+(mm/Xmax)*(W-PL-PR);
+const py=C=>H-PB-((C-Cmin)/(Cmax-Cmin))*(H-PT-PB);
+function profileC(mm,tt){ const xm=mm*1e-3; return C0+(Cs-C0)*(1-erf(xm/(2*Math.sqrt(D*tt)))); }
+
+function drawCurve(tt,color,wdt,dash){
+ ctx.strokeStyle=color; ctx.lineWidth=wdt; if(dash) ctx.setLineDash(dash); else ctx.setLineDash([]);
+ ctx.beginPath();
+ for(let mm=0;mm<=Xmax+0.001;mm+=0.02){ const x=px(mm), y=py(profileC(mm,tt)); if(mm===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+ ctx.stroke(); ctx.setLineDash([]);
+}
+function drawInterp(){
+ ctx.fillStyle=CSS.mut; ctx.font='14px Calibri'; ctx.textAlign='center';
+ ctx.fillText('reading between the rows: linear interpolation',W/2,26);
+ const xa=W*0.20, xb=W*0.80, yTop=155, yBot=285, f=0.34, mx=xa+f*(xb-xa);
+ // top axis (z)
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(xa,yTop); ctx.lineTo(xb,yTop); ctx.stroke();
+ ctx.fillStyle=CSS.steel; ctx.beginPath(); ctx.arc(xa,yTop,5,0,TAU); ctx.fill(); ctx.beginPath(); ctx.arc(xb,yTop,5,0,TAU); ctx.fill();
+ ctx.fillStyle=CSS.slate; ctx.font='bold 14px Calibri'; ctx.textAlign='center';
+ ctx.fillText('z = 0.40',xa,yTop-13); ctx.fillText('z = 0.45',xb,yTop-13);
+ ctx.fillStyle=CSS.amber; ctx.beginPath(); ctx.arc(mx,yTop,6,0,TAU); ctx.fill();
+ ctx.fillStyle=CSS.amber; ctx.fillText('z = 0.417',mx,yTop-13);
+ // bottom axis (erf)
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(xa,yBot); ctx.lineTo(xb,yBot); ctx.stroke();
+ ctx.fillStyle=CSS.steel; ctx.beginPath(); ctx.arc(xa,yBot,5,0,TAU); ctx.fill(); ctx.beginPath(); ctx.arc(xb,yBot,5,0,TAU); ctx.fill();
+ ctx.fillStyle=CSS.slate; ctx.textAlign='center';
+ ctx.fillText('erf = 0.4284',xa,yBot+26); ctx.fillText('erf = 0.4755',xb,yBot+26);
+ ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(mx,yBot,6,0,TAU); ctx.fill();
+ ctx.fillStyle=CSS.terra; ctx.fillText('erf ≈ 0.444',mx,yBot+26);
+ // connector
+ ctx.strokeStyle=CSS.amber; ctx.lineWidth=1.6; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(mx,yTop+9); ctx.lineTo(mx,yBot-9); ctx.stroke(); ctx.setLineDash([]);
+ // annotation
+ ctx.fillStyle=CSS.mut; ctx.font='13px Calibri'; ctx.textAlign='center';
+ ctx.fillText('0.417 is 34% of the way across the top row-spacing,',W/2,yTop+55);
+ ctx.fillText('so erf sits 34% of the way up between the two values.',W/2,yTop+75);
+}
+const ARIA={
+ profile:'Line chart of carbon concentration in weight percent versus depth below the surface in millimeters. The curve starts high at the carbon-rich surface and falls with depth toward the low-carbon core; deeper, further-reaching profiles are drawn for longer diffusion times.',
+ interp:'Diagram of linear interpolation between two number lines. The top line marks z = 0.40 and z = 0.45 with z = 0.417 placed about 34 percent of the way across. The bottom line marks erf = 0.4284 and erf = 0.4755 with the interpolated erf of about 0.444 at the matching position. A dashed connector links the two.'
+};
+const CAPT={
+ profile:'The surface stays carbon-rich; the concentration falls off with depth and the profile pushes deeper as time goes on.',
+ interp:'z = 0.417 lands between the z = 0.40 and z = 0.45 rows, so erf is read the same fraction (about 34%) of the way up between erf(0.40) = 0.4284 and erf(0.45) = 0.4755, giving erf &asymp; 0.444.'
+};
+function updateCaption(){
+ const capt=document.getElementById('capt');
+ if(stage===3){ if(capt) capt.innerHTML=CAPT.interp; cv.setAttribute('aria-label',ARIA.interp); }
+ else { if(capt) capt.innerHTML=CAPT.profile; cv.setAttribute('aria-label',ARIA.profile); }
+}
+function draw(){
+ const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||720;
+ cv.width=cssW*dpr; cv.height=cssW*(CH/CW)*dpr; ctx.setTransform((cssW/CW)*dpr,0,0,(cssW/CW)*dpr,0,0);
+ ctx.clearRect(0,0,W,H);
+ updateCaption();
+ if(stage===3){ drawInterp(); return; }
+ ctx.fillStyle=CSS.mut; ctx.font='14px Calibri'; ctx.textAlign='center';
+ ctx.fillText('carbon concentration versus depth below the surface',W/2,24);
+ // axes
+ ctx.strokeStyle=CSS.slate; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,H-PB); ctx.lineTo(W-PR,H-PB); ctx.stroke();
+ ctx.font='12.5px Calibri'; ctx.fillStyle=CSS.mut; ctx.textAlign='right';
+ for(let C=0.2;C<=1.0;C+=0.2){ const y=py(C); ctx.fillText(C.toFixed(1),PL-7,y+4); ctx.strokeStyle='#eef2f7'; ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(W-PR,y); ctx.stroke(); }
+ ctx.textAlign='center';
+ for(let mm=0;mm<=1.5;mm+=0.5){ ctx.fillStyle=CSS.mut; ctx.fillText(mm.toFixed(1),px(mm),H-PB+18); }
+ ctx.fillStyle=CSS.slate; ctx.font='14px Calibri'; ctx.fillText('depth below surface  x  (mm)',W/2,H-8);
+ ctx.save(); ctx.translate(16,(PT+H-PB)/2); ctx.rotate(-Math.PI/2); ctx.fillText('carbon concentration  C  (wt%)',0,0); ctx.restore();
+ // extra time curves in payoff
+ if(stage===5){ drawCurve(2.5*3600,CSS.line,2,[5,4]); drawCurve(40*3600,CSS.teal,2,[5,4]);
+   ctx.fillStyle=CSS.mut; ctx.font='12.5px Calibri'; ctx.textAlign='left';
+   ctx.fillText('2.5 h',px(0.28),py(profileC(0.28,2.5*3600))-8);
+   ctx.fillStyle=CSS.teal; ctx.fillText('40 h',px(1.02),py(profileC(1.02,40*3600))-8); }
+ // main curve (10 h)
+ drawCurve(tsec,CSS.steel,2.8);
+ ctx.fillStyle=CSS.steel; ctx.font='bold 13px Calibri'; ctx.textAlign='left'; ctx.fillText('10 h',px(0.66),py(profileC(0.66,tsec))-9);
+ // surface & bulk guide labels
+ ctx.fillStyle=CSS.mut; ctx.font='12.5px Calibri'; ctx.textAlign='left';
+ ctx.fillText('surface  C_s = 1.0',px(0.03),py(1.0)-8);
+ ctx.fillText('core  C_0 = 0.2',px(1.02),py(0.2)-8);
+ // depth-of-interest marker
+ if(stage>=2){ ctx.strokeStyle=CSS.amber; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.beginPath(); ctx.moveTo(px(0.5),PT); ctx.lineTo(px(0.5),H-PB); ctx.stroke(); ctx.setLineDash([]);
+   ctx.fillStyle=CSS.amber; ctx.font='bold 13px Calibri'; ctx.textAlign='center'; ctx.fillText('x = 0.50 mm',px(0.5),H-PB+34); }
+ // solved point
+ if(solved.C){ const x=px(0.5), y=py(Cx); ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.arc(x,y,6,0,TAU); ctx.fill();
+   ctx.fillStyle=CSS.terra; ctx.font='bold 14px Calibri'; ctx.textAlign='left'; ctx.fillText('C_x = 0.64 wt%',x+10,y-8); }
+}
+
+function render(){
+ document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
+ document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
+ const gated=(key!==null) && !(solved[key]||revealed[key]);
+ let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
+ if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
+ else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
+ nav+=`</div>`;
+ document.getElementById('card').insertAdjacentHTML('beforeend',nav);
+ let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
+ document.getElementById('dots').innerHTML=dh;
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; answers={Z:'',E:'',C:''}; feedback={Z:null,E:null,C:null}; attempts={Z:0,E:0,C:0}; revealed={Z:false,E:false,C:false}; solved={Z:false,E:false,C:false}; render(); };
+ wire('checkZ',checkZ); wire('checkE',checkE); wire('checkC',checkC);
+ // restore per-step state
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({Z:checkZ,E:checkE,C:checkC})[key](); } }; }
+   applyStepState(key);
+ }
+ draw();
+}
+function wire(id,fn){ const b=document.getElementById(id); if(b) b.onclick=fn; }
+function updateNext(){ const key=stageKey(stage); const nx=document.getElementById('next'); if(!nx||!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){
+     hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>';
+     const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); };
+   } else hint.innerHTML='';
+ }
+ updateNext();
+}
+const near=(v,t,tol)=>Math.abs(v-t)<tol;
+
+function checkZ(){ const raw=document.getElementById('ansZ').value; answers.Z=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.Z={cls:'no',html:'Enter a number.'}; applyStepState('Z'); return; }
+ if(near(v,0.417,0.02)){ solved.Z=true; feedback.Z={cls:'ok',html:'✓ Correct — z = (5.0×10⁻⁴)/(2·6.0×10⁻⁴) = <b>0.417</b>. Click Next.'}; }
+ else { attempts.Z++;
+   if(near(v,0.83,0.05)) feedback.Z={cls:'no',html:'Don\'t forget the <b>2</b> in the denominator: z = x/(2√(Dt)).'};
+   else if(v>10) feedback.Z={cls:'no',html:'Take the <b>square root</b> of Dt first: √(Dt) = 6.0×10⁻⁴ m, then z = x/(2·√(Dt)).'};
+   else feedback.Z={cls:'no',html:'Not quite. z = (5.0×10⁻⁴)/(2·6.0×10⁻⁴) ≈ 0.417.'};
+ }
+ applyStepState('Z'); draw(); }
+
+function checkE(){ const raw=document.getElementById('ansE').value; answers.E=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.E={cls:'no',html:'Enter a number.'}; applyStepState('E'); return; }
+ if(near(v,0.444,0.008)){ solved.E=true; feedback.E={cls:'ok',html:'✓ Correct — interpolating: 0.4284 + (0.017/0.05)(0.4755−0.4284) ≈ <b>0.44</b>. Click Next.'}; }
+ else { attempts.E++;
+   if(near(v,0.4284,0.008)) feedback.E={cls:'no',html:'That\'s erf(0.40). Our z = 0.417 is a bit higher — interpolate toward the 0.45 row.'};
+   else if(near(v,0.4755,0.008)) feedback.E={cls:'no',html:'That\'s erf(0.45). Our z = 0.417 is closer to 0.40 — interpolate between the two rows.'};
+   else feedback.E={cls:'no',html:'Not quite. Interpolate between erf(0.40)=0.4284 and erf(0.45)=0.4755 → ≈ 0.44.'};
+ }
+ applyStepState('E'); }
+
+function checkC(){ const raw=document.getElementById('ansC').value; answers.C=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.C={cls:'no',html:'Enter a number (wt%).'}; applyStepState('C'); return; }
+ if(near(v,0.645,0.03)){ solved.C=true; feedback.C={cls:'ok',html:'✓ Correct — C<sub>x</sub> = 0.20 + (0.80)(0.56) = <b>0.64 wt% C</b>. Click Next.'}; }
+ else { attempts.C++;
+   if(near(v,0.555,0.03)) feedback.C={cls:'no',html:'You used erf z instead of (1 − erf z). The model has <b>1 − erf z</b> = 0.56.'};
+   else if(near(v,0.445,0.03)) feedback.C={cls:'no',html:'You found (C<sub>s</sub>−C<sub>0</sub>)(1−erf z) but forgot to add <b>C<sub>0</sub></b> = 0.20.'};
+   else feedback.C={cls:'no',html:'Not quite. C<sub>x</sub> = 0.20 + (1.00−0.20)(1−0.44) = 0.64 wt%.'};
+ }
+ applyStepState('C'); draw(); }
+
+window.addEventListener('resize',draw);
+render();
+</script>
+</body>
+</html>

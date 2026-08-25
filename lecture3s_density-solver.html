@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="lecture-number" content="3s">
-<meta name="lecture-title" content="Theoretical Density — Build It, Then Solve It">
-<meta name="lecture-topic" content="Predicting density from crystal structure, atomic radius, and atomic mass">
 <title>Theoretical Density — Build It &amp; Solve It (Lecture 3s)</title>
 <style>
   :root{--navy:#1F3864;--terra:#B85042;--teal:#1F7A63;--amber:#E8890C;--purp:#6D4C7D;--steel:#2E5496;--slate:#3F4A5A;--mut:#6B7480;--line:#C7CFDA;--ice:#D9E1F2;--light:#F1F4F8;--bg:#FFFFFF;--green:#2C6E49;}
@@ -42,6 +39,9 @@
   .dot.on{background:var(--navy);}
   .legend{font-size:12.5px;color:var(--mut);margin-top:6px;}
   .legend span{margin-right:14px;} .sw{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-2px;margin-right:4px;}
+  .solution{margin-top:9px;font-size:13px;background:var(--light);border-left:3px solid var(--steel);padding:9px 12px;border-radius:6px;color:var(--slate);line-height:1.55;}
+  .solution b{color:var(--navy);}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
   b.term{color:var(--navy);}
 </style>
 </head>
@@ -52,8 +52,8 @@
 
   <div class="stage">
     <div class="canvaswrap">
-      <canvas id="cv" width="720" height="470"></canvas>
-      <div class="legend"><span><span class="sw" style="background:var(--steel)"></span>corner atom (counts as 1/8 here)</span><span><span class="sw" style="background:var(--amber)"></span>face-centre atom (counts as 1/2 here)</span></div>
+      <canvas id="cv" width="720" height="470" role="img" aria-label="Isometric diagram of a face-centered cubic copper unit cell"></canvas>
+      <div class="legend"><span><span class="sw" style="background:var(--steel)"></span>corner atom (counts as 1/8 here)</span><span><span class="sw" style="background:var(--amber)"></span>face-center atom (counts as 1/2 here)</span></div>
     </div>
     <div class="panel">
       <div class="step" id="stepLabel">Step 1 of 6</div>
@@ -75,7 +75,7 @@ const a_cm=a_nm*1e-7;               // 3.620e-8 cm
 const Vc=Math.pow(a_cm,3);          // 4.746e-23 cm^3
 const rho=n*A/(Vc*NA);              // 8.89 g/cm^3
 
-let W=720,H=470;
+let H=470;
 // isometric cube
 const U=150, DP=64, OX=250, OY=360;
 const P=(x,y,z)=>[OX+x*U+z*DP, OY-y*U-z*DP];
@@ -83,7 +83,23 @@ const corners=[]; for(const x of[0,1])for(const y of[0,1])for(const z of[0,1]) c
 const edges=[]; corners.forEach((a,i)=>corners.forEach((b,j)=>{ if(j>i){ const d=Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])+Math.abs(a[2]-b[2]); if(d===1) edges.push([a,b]); }}));
 const faces=[[0.5,0.5,0,'front'],[0.5,0.5,1,'back'],[0.5,0,0.5,'bottom'],[0.5,1,0.5,'top'],[0,0.5,0.5,'left'],[1,0.5,0.5,'right']];
 
-let stage=0, solvedA=false, solvedR=false, countIdx=0;
+// ---- module-level state (persists across re-renders) ----
+let stage=0, countIdx=0;
+let answers={A:'',R:''};
+let feedback={A:null,R:null};
+let attempts={A:0,R:0};
+let revealed={A:false,R:false};
+let solved={A:false,R:false};
+const solText={
+ A:'a = 2&radic;2&middot;R = 2&radic;2(0.128) = <b>0.362 nm</b>.',
+ R:'&rho; = (4&times;63.55) / (4.75&times;10&#8315;&sup2;&sup3; &times; 6.022&times;10&sup2;&sup3;) &approx; <b>8.9 g/cm&sup3;</b>.'
+};
+const stageKey=st=>({2:'A',4:'R'})[st]||null;
+const ARIA={
+ base:'Isometric diagram of a face-centered cubic copper unit cell: an atom at each of the 8 cube corners and one at the center of each of the 6 faces.',
+ count:'Isometric FCC copper unit cell with atoms tallied one at a time — 8 corner atoms counting one eighth each and 6 face atoms counting one half each, totalling 4 atoms per cell.',
+ diag:'Isometric FCC copper unit cell with the front face highlighted and its face diagonal marked, showing the diagonal spans 4 atomic radii: a√2 = 4R.'
+};
 
 // the 14 atoms to tally, in order: 8 corners (1/8 each), then 6 faces (1/2 each)
 const countList = corners.map(c=>({p:c,type:'corner'})).concat(faces.map(f=>({p:[f[0],f[1],f[2]],type:'face'})));
@@ -92,11 +108,11 @@ const stages=[
  {html:`<h3>What we're computing</h3>
    <div class="eq">&rho; = mass &divide; volume</div>
    <ul class="defs">
-     <li><b>&rho;</b> &mdash; density, in grams per cubic centimetre (g/cm&sup3;)</li>
+     <li><b>&rho;</b> &mdash; density, in grams per cubic centimeter (g/cm&sup3;)</li>
      <li>We compute it for <b>one unit cell</b>: the mass of the atoms inside &divide; the cell's volume</li>
    </ul>
-   <p>Our metal is <b>copper</b>, which is <b>FCC</b> (face-centred cubic), with atomic radius R = 0.128 nm and atomic mass A = 63.55 g/mol.</p>`},
- {html:`<h3>2 &middot; Atoms per cell (n) &mdash; count them</h3>
+   <p>Our metal is <b>copper</b>, which is <b>FCC</b> (face-centered cubic), with atomic radius R = 0.128 nm and atomic mass A = 63.55 g/mol.</p>`},
+ {html:`<h3>Part 1 &middot; Atoms per cell (n) &mdash; count them</h3>
    <ul class="defs">
      <li><b>n</b> &mdash; the number of atoms belonging to one unit cell</li>
      <li>A <b>corner</b> atom is shared by 8 cells, so it counts as <b>1/8</b></li>
@@ -105,32 +121,36 @@ const stages=[
    <p>Click through and tally the atoms one at a time &mdash; each click highlights the next atom on the cell:</p>
    <div id="tally" style="background:var(--light);border-radius:8px;padding:9px 12px;margin:2px 0 10px;font-size:13.5px;line-height:1.75"></div>
    <div class="nav" style="justify-content:flex-start"><button id="countNext">Count next atom &rarr;</button><button class="ghost" id="countReset">Reset</button></div>`},
- {html:`<h3>2 · The lattice parameter a — your turn</h3>
+ {html:`<h3>Part 2 · The lattice parameter a — your turn</h3>
    <ul class="defs">
      <li><b>a</b> — the cube edge length</li>
      <li><b>R</b> — the atomic radius (0.128 nm)</li>
    </ul>
    <p>In FCC, atoms touch along the <b>face diagonal</b>: it holds 4 radii, and its length is a√2. So 4R = a√2, i.e. <b>a = 2√2·R</b>.</p>
    <p>Compute the lattice parameter a (in nm):</p>
+   <label class="sr-only" for="ansA">Part 2: lattice parameter a, in nanometers</label>
    <div class="answer-row"><input type="number" id="ansA" step="0.001" placeholder="a = ?"> <span class="unit">nm</span><button id="checkA">Check</button></div>
-   <div class="feedback" id="fbA"></div>`},
- {html:`<h3>3 · The cell volume V_c</h3>
+   <div class="feedback" id="fbA" aria-live="polite"></div>
+   <div id="hintA"></div>`},
+ {html:`<h3>Part 3 · The cell volume V_c</h3>
    <ul class="defs">
      <li><b>V_c</b> — the volume of the cubic unit cell = a³</li>
-     <li>For density in g/cm³ we need a in <b>centimetres</b>: a = 0.362 nm = 3.62×10⁻⁸ cm</li>
+     <li>For density in g/cm³ we need a in <b>centimeters</b>: a = 0.362 nm = 3.62×10⁻⁸ cm</li>
    </ul>
    <div class="eq">V_c = a³ = (3.62×10⁻⁸ cm)³ ≈ 4.75×10⁻²³ cm³</div>
    <p>Tiny — that's the volume of one repeating box of the crystal.</p>`},
- {html:`<h3>4 · Put it together — solve for ρ</h3>
+ {html:`<h3>Part 4 · Put it together — solve for ρ</h3>
    <div class="eq">ρ = n·A / (V_c · N_A)</div>
    <ul class="defs">
      <li><b>n</b> = 4 atoms/cell · <b>A</b> = 63.55 g/mol · <b>V_c</b> = 4.75×10⁻²³ cm³ · <b>N_A</b> = 6.022×10²³ /mol</li>
      <li>N_A (Avogadro's number) converts the molar mass A into the mass of the actual atoms in the cell</li>
    </ul>
    <p>Compute the theoretical density ρ (in g/cm³):</p>
+   <label class="sr-only" for="ansR">Part 4: theoretical density, in grams per cubic centimeter</label>
    <div class="answer-row"><input type="number" id="ansR" step="0.01" placeholder="ρ = ?"> <span class="unit">g/cm³</span><button id="checkR">Check</button></div>
-   <div class="feedback" id="fbR"></div>`},
- {html:`<h3>5 · Does it match reality?</h3>
+   <div class="feedback" id="fbR" aria-live="polite"></div>
+   <div id="hintR"></div>`},
+ {html:`<h3>Part 5 · Does it match reality?</h3>
    <p>You predicted <b style="color:var(--navy)">ρ ≈ 8.9 g/cm³</b>. The measured density of copper is <b>8.96 g/cm³</b> — agreement within about 1%.</p>
    <ul class="defs">
      <li>From just the <b>structure</b> (FCC), the <b>atomic radius</b>, and the <b>atomic mass</b>, you predicted a bulk property.</li>
@@ -141,10 +161,10 @@ const stages=[
 
 function draw(){
  const dpr=window.devicePixelRatio||1, cssW=cv.clientWidth||720, cssH=cssW*(H/720);
- cv.width=cssW*dpr; cv.height=cssH*dpr; W=cssW; ctx.setTransform((cssW/720)*dpr,0,0,(cssW/720)*dpr,0,0);
+ cv.width=cssW*dpr; cv.height=cssH*dpr; ctx.setTransform((cssW/720)*dpr,0,0,(cssW/720)*dpr,0,0);
  ctx.clearRect(0,0,720,470); ctx.font='13px Calibri';
  // title on canvas
- ctx.fillStyle=CSS.mut; ctx.textAlign='center'; ctx.fillText('Copper — face-centred cubic (FCC) unit cell',360,30);
+ ctx.fillStyle=CSS.mut; ctx.textAlign='center'; ctx.fillText('Copper — face-centered cubic (FCC) unit cell',360,30);
 
  // edges
  ctx.strokeStyle=CSS.line; ctx.lineWidth=1.6;
@@ -162,7 +182,7 @@ function draw(){
  }
 
  // atoms — draw hidden layer faint, then visible
- const drawAtom=(pt,color,alpha)=>{ ctx.globalAlpha=alpha; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(pt[0],pt[1],18,0,7); ctx.fill(); ctx.globalAlpha=1; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); };
+ const drawAtom=(pt,color,alpha)=>{ ctx.globalAlpha=alpha; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(pt[0],pt[1],18,0,2*Math.PI); ctx.fill(); ctx.globalAlpha=1; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); };
  if(stage!==1){
    corners.filter(c=>c[2]===1).forEach(c=>drawAtom(P(...c),CSS.steel,0.4));
    faces.filter(f=>['back','left','bottom'].includes(f[3])).forEach(f=>drawAtom(P(f[0],f[1],f[2]),CSS.amber,0.4));
@@ -173,12 +193,12 @@ function draw(){
  // edge label 'a'
  const em=P(0.5,0,0); ctx.fillStyle=CSS.slate; ctx.font='italic bold 14px Calibri'; ctx.textAlign='center'; ctx.fillText('a',em[0],em[1]+24);
 
- // ---- step 2 (stage 1): click-to-count. Counted atoms light up; the newest is ringed and labelled ----
+ // ---- step 2 (stage 1): click-to-count. Counted atoms light up; the newest is ringed and labeled ----
  if(stage===1){
    countList.forEach((it,i)=>{ if(i>=countIdx){ drawAtom(P(...it.p), it.type==='corner'?CSS.steel:CSS.amber, 0.18); } });
    countList.forEach((it,i)=>{ if(i<countIdx){ drawAtom(P(...it.p), it.type==='corner'?CSS.steel:CSS.amber, 1); } });
    if(countIdx>0){ const it=countList[countIdx-1], pt=P(...it.p), c=(it.type==='corner'?CSS.steel:CSS.amber);
-     ctx.strokeStyle=c; ctx.lineWidth=2.8; ctx.beginPath(); ctx.arc(pt[0],pt[1],23,0,7); ctx.stroke();
+     ctx.strokeStyle=c; ctx.lineWidth=2.8; ctx.beginPath(); ctx.arc(pt[0],pt[1],23,0,2*Math.PI); ctx.stroke();
      ctx.fillStyle=c; ctx.font='bold 15px Calibri'; ctx.textAlign='center'; ctx.fillText(it.type==='corner'?'+1/8':'+1/2', pt[0], pt[1]-29); }
    ctx.fillStyle=CSS.mut; ctx.textAlign='center'; ctx.font='13px Calibri';
    ctx.fillText(countIdx<8?'counting the 8 corner atoms…':countIdx<14?'now the 6 face atoms…':'all 14 atoms counted → n = 4',360,444);
@@ -188,9 +208,10 @@ function draw(){
  ctx.textAlign='left'; ctx.font='bold 15px Calibri';
  const chip=(txt,color,y)=>{ ctx.fillStyle=color; ctx.fillText(txt,490,y); };
  if(stage>=2) chip('n = 4 atoms / cell',CSS.navy,205);
- if(stage>=2 && solvedA) chip('a = 0.362 nm',CSS.terra,240);
+ if(stage>=2 && solved.A) chip('a = 0.362 nm',CSS.terra,240);
  if(stage>=3) chip('V_c = 4.75×10⁻²³ cm³',CSS.steel,275);
- if(stage>=4 && solvedR) chip('ρ = 8.9 g/cm³',CSS.green,310);
+ if(stage>=4 && solved.R) chip('ρ = 8.9 g/cm³',CSS.green,310);
+ cv.setAttribute('aria-label', stage===1?ARIA.count : stage>=2?ARIA.diag : ARIA.base);
 }
 
 function updateTally(){
@@ -203,49 +224,72 @@ function updateTally(){
 function render(){
  document.getElementById('stepLabel').textContent=`Step ${stage+1} of ${stages.length}`;
  document.getElementById('card').innerHTML=stages[stage].html;
+ const key=stageKey(stage);
  let nav=`<div class="nav"><button class="ghost" id="back" ${stage===0?'disabled':''}>← Back</button>`;
- const gated=(stage===1&&countIdx<14)||(stage===2&&!solvedA)||(stage===4&&!solvedR);
+ const answerGated=(key!==null)&&!(solved[key]||revealed[key]);
+ const countGated=(stage===1&&countIdx<14);
+ const gated=answerGated||countGated;
  if(stage<stages.length-1) nav+=`<button id="next" ${gated?'disabled':''}>Next →</button>`;
  else nav+=`<button id="again" class="ghost">↺ Start over</button>`;
  nav+=`</div>`;
  document.getElementById('card').insertAdjacentHTML('beforeend',nav);
  let dh=''; for(let i=0;i<stages.length;i++) dh+=`<div class="dot ${i===stage?'on':''}"></div>`;
  document.getElementById('dots').innerHTML=dh;
- const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();draw();};
- const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();draw();};
- const again=document.getElementById('again'); if(again) again.onclick=()=>{stage=0;solvedA=false;solvedR=false;countIdx=0;render();draw();};
+ const back=document.getElementById('back'); if(back) back.onclick=()=>{stage=Math.max(0,stage-1);render();};
+ const next=document.getElementById('next'); if(next) next.onclick=()=>{stage=Math.min(stages.length-1,stage+1);render();};
+ const again=document.getElementById('again'); if(again) again.onclick=()=>{ stage=0; countIdx=0; answers={A:'',R:''}; feedback={A:null,R:null}; attempts={A:0,R:0}; revealed={A:false,R:false}; solved={A:false,R:false}; render(); };
  const cA=document.getElementById('checkA'); if(cA) cA.onclick=checkA;
  const cR=document.getElementById('checkR'); if(cR) cR.onclick=checkR;
- const iA=document.getElementById('ansA'); if(iA) iA.addEventListener('keydown',e=>{if(e.key==='Enter')checkA();});
- const iR=document.getElementById('ansR'); if(iR) iR.addEventListener('keydown',e=>{if(e.key==='Enter')checkR();});
  const cn=document.getElementById('countNext'); if(cn) cn.onclick=()=>{ if(countIdx<14){ countIdx++; updateTally(); if(countIdx===14){ const nx=document.getElementById('next'); if(nx) nx.disabled=false; } draw(); } };
  const crs=document.getElementById('countReset'); if(crs) crs.onclick=()=>{ countIdx=0; updateTally(); const nx=document.getElementById('next'); if(nx) nx.disabled=true; draw(); };
  if(stage===1) updateTally();
+ // restore per-step answer state
+ if(key){
+   const inp=document.getElementById('ans'+key);
+   if(inp){ inp.value=answers[key]||''; inp.oninput=()=>{ answers[key]=inp.value; }; inp.onkeydown=(e)=>{ if(e.key==='Enter'){ ({A:checkA,R:checkR})[key](); } }; }
+   applyStepState(key);
+ }
  draw();
 }
+function updateNext(){ const key=stageKey(stage); const nx=document.getElementById('next'); if(!nx||!key) return; nx.disabled=!(solved[key]||revealed[key]); }
+function applyStepState(key){
+ const fb=document.getElementById('fb'+key);
+ if(fb){ const f=feedback[key]; if(f){ fb.className='feedback '+f.cls; fb.innerHTML=f.html; } else { fb.className='feedback'; fb.innerHTML=''; } }
+ const hint=document.getElementById('hint'+key);
+ if(hint){
+   if(revealed[key]){ hint.innerHTML='<div class="solution"><b>Worked solution:</b> '+solText[key]+'</div>'; }
+   else if(attempts[key]>=2 && !solved[key]){
+     hint.innerHTML='<div style="margin-top:10px"><button class="ghost" id="show'+key+'">Show the working</button></div>';
+     const b=document.getElementById('show'+key); if(b) b.onclick=()=>{ revealed[key]=true; applyStepState(key); };
+   } else hint.innerHTML='';
+ }
+ updateNext();
+}
 function checkA(){
- const v=parseFloat(document.getElementById('ansA').value), fb=document.getElementById('fbA');
- if(isNaN(v)){ fb.className='feedback no'; fb.textContent='Enter a number (in nm).'; return; }
+ const raw=document.getElementById('ansA').value; answers.A=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.A={cls:'no',html:'Enter a number (in nm).'}; applyStepState('A'); return; }
  const near=(t)=>Math.abs(v-t)<0.006;
- if(near(0.362)){ solvedA=true; fb.className='feedback ok';
-   fb.innerHTML='✓ Correct — a = 2√2·R = 2√2(0.128) = <b>0.362 nm</b>. Click Next.';
-   const nx=document.getElementById('next'); if(nx) nx.disabled=false; draw(); }
- else if(near(0.2956)){ fb.className='feedback no'; fb.innerHTML='That is the <b>BCC</b> relation (a = 4R/√3). Copper is FCC, where atoms touch along the face diagonal: a = 2√2·R.'; }
- else if(near(0.256)){ fb.className='feedback no'; fb.innerHTML='That is a = 2R (simple cubic). In FCC the atoms don’t touch along the edge — they touch along the face diagonal.'; }
- else if(near(0.512)){ fb.className='feedback no'; fb.innerHTML='That is a = 4R (the whole face diagonal length equals a√2, not a). Use a = 2√2·R.'; }
- else { fb.className='feedback no'; fb.innerHTML='Not quite. For FCC, a = 2√2·R = 2√2 × 0.128 nm.'; }
+ if(near(0.362)){ solved.A=true; feedback.A={cls:'ok',html:'✓ Correct — a = 2√2·R = 2√2(0.128) = <b>0.362 nm</b>. Click Next.'}; }
+ else { attempts.A++;
+   if(near(0.2956)) feedback.A={cls:'no',html:'That is the <b>BCC</b> relation (a = 4R/√3). Copper is FCC, where atoms touch along the face diagonal: a = 2√2·R.'};
+   else if(near(0.256)) feedback.A={cls:'no',html:'That is a = 2R (simple cubic). In FCC the atoms don’t touch along the edge — they touch along the face diagonal.'};
+   else if(near(0.512)) feedback.A={cls:'no',html:'That is a = 4R (the whole face diagonal length equals a√2, not a). Use a = 2√2·R.'};
+   else feedback.A={cls:'no',html:'Not quite. For FCC, a = 2√2·R = 2√2 × 0.128 nm.'};
+ }
+ applyStepState('A'); draw();
 }
 function checkR(){
- const v=parseFloat(document.getElementById('ansR').value), fb=document.getElementById('fbR');
- if(isNaN(v)){ fb.className='feedback no'; fb.textContent='Enter a number (in g/cm³).'; return; }
+ const raw=document.getElementById('ansR').value; answers.R=raw; const v=parseFloat(raw);
+ if(isNaN(v)){ feedback.R={cls:'no',html:'Enter a number (in g/cm³).'}; applyStepState('R'); return; }
  const near=(t)=>Math.abs(v-t)<0.3;
- if(near(8.89)){ solvedR=true; fb.className='feedback ok';
-   fb.innerHTML='✓ Correct — ρ = (4×63.55)/(4.75×10⁻²³ × 6.022×10²³) ≈ <b>8.9 g/cm³</b>. Click Next.';
-   const nx=document.getElementById('next'); if(nx) nx.disabled=false; draw(); }
- else if(near(4.45)){ fb.className='feedback no'; fb.innerHTML='You used <b>n = 2</b> (that’s BCC). FCC has n = 4 atoms per cell.'; }
- else if(near(2.22)){ fb.className='feedback no'; fb.innerHTML='You used n = 1. FCC has n = 4 atoms per cell.'; }
- else if(v>100){ fb.className='feedback no'; fb.innerHTML='Check your units — V_c must be in cm³ (4.75×10⁻²³), not nm³. Leaving a in nm makes ρ come out astronomically large.'; }
- else { fb.className='feedback no'; fb.innerHTML='Not quite. ρ = nA/(V_c·N_A) = (4×63.55)/(4.75×10⁻²³ × 6.022×10²³).'; }
+ if(near(8.89)){ solved.R=true; feedback.R={cls:'ok',html:'✓ Correct — ρ = (4×63.55)/(4.75×10⁻²³ × 6.022×10²³) ≈ <b>8.9 g/cm³</b>. Click Next.'}; }
+ else { attempts.R++;
+   if(near(4.45)) feedback.R={cls:'no',html:'You used <b>n = 2</b> (that’s BCC). FCC has n = 4 atoms per cell.'};
+   else if(near(2.22)) feedback.R={cls:'no',html:'You used n = 1. FCC has n = 4 atoms per cell.'};
+   else if(v>100) feedback.R={cls:'no',html:'Check your units — V_c must be in cm³ (4.75×10⁻²³), not nm³. Leaving a in nm makes ρ come out astronomically large.'};
+   else feedback.R={cls:'no',html:'Not quite. ρ = nA/(V_c·N_A) = (4×63.55)/(4.75×10⁻²³ × 6.022×10²³).'};
+ }
+ applyStepState('R'); draw();
 }
 window.addEventListener('resize',draw);
 render();
