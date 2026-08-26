@@ -77,14 +77,14 @@ const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#
 const TAU=2*Math.PI;
 
 // Cu-Ni isomorphous. Liquidus & solidus control points (wt% Ni, T degC).
-// Tie-line ends used below lie exactly on control points (worked 1360C: 50<->58, student 1300C: 32<->42).
-const LIQ=[[0,1085],[26,1250],[32,1300],[50,1360],[75,1412],[100,1455]];
-const SOL=[[0,1085],[36,1250],[42,1300],[58,1360],[80,1415],[100,1455]];
+// Tie-line ends used below lie exactly on control points (worked 1360C: 50<->58, student 1250C: 32<->43).
+const LIQ=[[0,1085],[32,1250],[41,1300],[50,1360],[75,1412],[100,1455]];
+const SOL=[[0,1085],[43,1250],[50,1300],[58,1360],[80,1415],[100,1455]];
 // fill in len, WL, Wa from the compositions so nothing can silently desync (F3)
 function lever(P){ P.len=P.Ca-P.CL; P.WL=(P.Ca-P.C0)/P.len; P.Wa=(P.C0-P.CL)/P.len; return P; }
 const EX =lever({T:1360, C0:52, CL:50, Ca:58});  // worked example: Cu-52 Ni, length 8
-const STU=lever({T:1300, C0:35, CL:32, Ca:42});  // student problem: Cu-35 Ni, length 10
-const PAY=lever({T:1280, C0:35, CL:29.6, Ca:39.6}); // payoff comparison (on cooling): ~54% solid
+const STU=lever({T:1250, C0:35, CL:32, Ca:43});  // student problem: Cu-35 Ni, length 11
+const PAY=lever({T:1235, C0:35, CL:29, Ca:40}); // payoff comparison (on cooling): ~55% solid
 
 // ---- module-level state (persists across re-renders) ----
 let stage=0, exIdx=0;                 // exIdx: worked-example click-through (0..3)
@@ -94,8 +94,8 @@ let attempts={R:0,L:0,A:0};
 let revealed={R:false,L:false,A:false};
 let solved={R:false,L:false,A:false};
 const solText={
- R:'Drop the <b>left</b> (liquidus) end of the tie line straight down to the axis: it sits at <b>32 wt% Ni</b>. (The right, solidus end reads C<sub>&alpha;</sub> = 42 the same way.)',
- L:'W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>)/(C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (42 &minus; 35)/(42 &minus; 32) = 7/10 = <b>0.70</b>. (far arm &divide; whole tie line)',
+ R:'Drop the <b>left</b> (liquidus) end of the tie line straight down to the axis: it sits at <b>32 wt% Ni</b>. (The right, solidus end reads C<sub>&alpha;</sub> = 43 the same way.)',
+ L:'W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>)/(C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (43 &minus; 35)/(43 &minus; 32) = 8/11 = <b>0.727</b>. (far arm &divide; whole tie line)',
  A:'W<sub>&alpha;</sub> = (C<sub>0</sub> &minus; C<sub>L</sub>)/(C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (35 &minus; 32)/10 = 3/10 = <b>0.30</b>. (near arm &divide; length, or 1 &minus; W<sub>L</sub>)'
 };
 const stageKey=st=>({3:'R',4:'L',5:'A'})[st]||null;
@@ -125,15 +125,15 @@ const stages=[
    <div class="nav" style="justify-content:flex-start"><button id="exNext">Reveal next step ▸</button><button class="ghost" id="exReset" aria-label="Reset the worked example">Reset</button></div>
    <p class="footnote">Different alloy, different tie-line length (8, not 10) — just to show the recipe. You'll do your own alloy next.</p>`},
  {html:`<h3>Your turn — read the tie line off the diagram</h3>
-   <p>Your alloy is Cu&ndash;35 wt% Ni. At <b>1300&nbsp;&deg;C</b> the tie line is drawn across the lens (left), its ends marked on the liquidus and solidus with drop-lines to the axis.</p>
+   <p>Your alloy is Cu&ndash;35 wt% Ni. At <b>1250&nbsp;&deg;C</b> the tie line is drawn across the lens (left), its ends marked on the liquidus and solidus with drop-lines to the axis.</p>
    <p>Read the <b>liquid</b> composition — the <b>left</b> (liquidus) end — off the composition axis:</p>
    <label class="sr-only" for="ansR">Liquid composition C_L, in weight percent nickel</label>
    <div class="answer-row"><span class="unit">C<sub>L</sub> =</span><input type="number" id="ansR" step="1" min="0" max="100" placeholder="?"> <span class="unit">wt% Ni</span><button id="checkR">Check</button></div>
    <div class="feedback" id="fbR" aria-live="polite"></div>
    <div id="hintR"></div>`},
  {html:`<h3>Your turn — fraction of liquid W<sub>L</sub></h3>
-   <p>You read C<sub>L</sub> = 32; the solidus end reads C<sub>&alpha;</sub> = 42. With C<sub>0</sub> = 35, use the <b>far</b> arm.</p>
-   <div class="eq">W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>) / (C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (42 &minus; 35) / (42 &minus; 32)</div>
+   <p>You read C<sub>L</sub> = 32; the solidus end reads C<sub>&alpha;</sub> = 43. With C<sub>0</sub> = 35, use the <b>far</b> arm.</p>
+   <div class="eq">W<sub>L</sub> = (C<sub>&alpha;</sub> &minus; C<sub>0</sub>) / (C<sub>&alpha;</sub> &minus; C<sub>L</sub>) = (43 &minus; 35) / (43 &minus; 32)</div>
    <label class="sr-only" for="ansL">Fraction of liquid W_L, a number between 0 and 1</label>
    <div class="answer-row"><span class="unit">W<sub>L</sub> =</span><input type="number" id="ansL" step="0.05" min="0" max="1" placeholder="?"><button id="checkL">Check</button></div>
    <div class="feedback" id="fbL" aria-live="polite"></div>
@@ -147,8 +147,8 @@ const stages=[
    <div id="hintA"></div>`},
  {html:`<h3>What the numbers mean</h3>
    <ul class="defs">
-     <li>At 1300&nbsp;&deg;C the Cu&ndash;35 Ni alloy is <b>70% liquid, 30% solid</b> by mass (W<sub>L</sub> + W<sub>&alpha;</sub> = 1).</li>
-     <li>Cool further and C<sub>0</sub> stays put, but the tie line shifts: the solid arm grows, so <b>more solidifies</b> (the faint lower tie line shows ~54% solid at 1280&nbsp;&deg;C). At the solidus the alloy is fully solid.</li>
+     <li>At 1250&nbsp;&deg;C the Cu&ndash;35 Ni alloy is <b>73% liquid, 27% solid</b> by mass (W<sub>L</sub> + W<sub>&alpha;</sub> = 1).</li>
+     <li>Cool further and C<sub>0</sub> stays put, but the tie line shifts: the solid arm grows, so <b>more solidifies</b> (the faint lower tie line shows ~55% solid at 1235&nbsp;&deg;C). At the solidus the alloy is fully solid.</li>
      <li>Scaling in words: a phase's fraction is proportional to the length of the <b>opposite</b> lever arm.</li>
    </ul>
    <p>This is exactly how you read out how far solidification has progressed at any temperature during a casting.</p>`}
@@ -249,10 +249,10 @@ function updateCaption(){
   'The Cu–Ni phase diagram: liquid L on top, solid α on the bottom, a two-phase lens between.',
   'The lever rule balances the tie line at C₀; each phase gets the opposite arm.',
   'Worked example: the 1360 °C tie line for a Cu–52 Ni alloy; arms reveal as you step through.',
-  'Your alloy at 1300 °C: read the tie-line ends off the composition axis (drop-lines shown).',
+  'Your alloy at 1250 °C: read the tie-line ends off the composition axis (drop-lines shown).',
   'The far arm (C_α − C₀) gives the fraction of liquid W_L.',
   'The near arm (C₀ − C_L) gives the fraction of solid W_α (so W_L + W_α = 1).',
-  'The solved 1300 °C tie line (70% liquid, 30% solid), with a lower tie line showing more solid on cooling.'
+  'The solved 1250 °C tie line (73% liquid, 27% solid), with a lower tie line showing more solid on cooling.'
  ][stage];
 }
 
@@ -310,39 +310,39 @@ function applyStepState(key){
 }
 const near=(v,t,tol)=>Math.abs(v-t)<tol;
 
-// target 32 | distractors 35 (read C0), 42 (read C_alpha/solidus), >100 (read temperature) | nearest gap 3 -> tol 1
+// target 32 | distractors 35 (read C0), 43 (read C_alpha/solidus), >100 (read temperature) | nearest gap 3 -> tol 1
 function checkR(){ const raw=document.getElementById('ansR').value; answers.R=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.R={cls:'no',html:'Enter a composition in wt% Ni.'}; applyStepState('R'); return; }
- if(near(v,32,1)){ solved.R=true; feedback.R={cls:'ok',html:'✓ Correct — the liquidus end sits at <b>32 wt% Ni</b>. (The solidus end reads C<sub>α</sub> = 42.) Click Next.'}; }
+ if(near(v,32,1)){ solved.R=true; feedback.R={cls:'ok',html:'✓ Correct — the liquidus end sits at <b>32 wt% Ni</b>. (The solidus end reads C<sub>α</sub> = 43.) Click Next.'}; }
  else { attempts.R++;
    if(near(v,35,1)) feedback.R={cls:'no',html:'That is C₀, the overall alloy. C<sub>L</sub> is the <b>left</b> end of the tie line (on the liquidus).'};
-   else if(near(v,42,1)) feedback.R={cls:'no',html:'That is C<sub>α</sub>, the <b>solidus</b> (right) end — the solid composition. C<sub>L</sub> is the left (liquid) end.'};
+   else if(near(v,43,1)) feedback.R={cls:'no',html:'That is C<sub>α</sub>, the <b>solidus</b> (right) end — the solid composition. C<sub>L</sub> is the left (liquid) end.'};
    else if(v>100) feedback.R={cls:'no',html:'Read the <b>composition</b> (horizontal axis, wt% Ni), not the temperature.'};
    else feedback.R={cls:'no',html:'Not quite. Read the left (liquidus) end of the tie line off the axis ≈ 32 wt% Ni.'};
  }
  applyStepState('R'); draw(); }
 
-// target 0.70 | distractors 0.30 (near arm), 0.43 (near/far instead of far/total), 0.50 (midpoint), >1.5 (not normalized) | nearest gap 0.20 -> tol 0.03
+// target 0.727 | distractors 0.273 (near arm), 0.375 (near/far instead of far/total), 0.50 (midpoint), >1.5 (not normalized) | nearest gap 0.35 -> tol 0.03
 function checkL(){ const raw=document.getElementById('ansL').value; answers.L=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.L={cls:'no',html:'Enter a number between 0 and 1.'}; applyStepState('L'); return; }
- if(near(v,0.70,0.03)){ solved.L=true; feedback.L={cls:'ok',html:'✓ Correct — (42 − 35)/10 = <b>0.70</b>: the alloy is 70% liquid. Click Next.'}; }
+ if(near(v,0.727,0.03)){ solved.L=true; feedback.L={cls:'ok',html:'✓ Correct — (43 − 35)/11 = <b>0.727</b>: the alloy is 73% liquid. Click Next.'}; }
  else { attempts.L++;
-   if(near(v,0.30,0.03)) feedback.L={cls:'no',html:'That is the <b>near</b> arm. The fraction of <b>liquid</b> uses the <b>far</b> (solid-side) arm: (C<sub>α</sub> − C₀) = 42 − 35.'};
-   else if(near(v,0.43,0.03)) feedback.L={cls:'no',html:'You divided one arm by the <b>other</b> arm. The denominator is the <b>whole tie line</b> C<sub>α</sub> − C<sub>L</sub> = 10, not the near arm: 7/10, not 3/7.'};
-   else if(near(v,0.50,0.03)) feedback.L={cls:'no',html:'C₀ is not at the midpoint of the tie line. Use (C<sub>α</sub> − C₀)/(C<sub>α</sub> − C<sub>L</sub>) = 7/10.'};
-   else if(v>1.5) feedback.L={cls:'no',html:'Give a <b>fraction</b> (0–1): divide the arm by the tie-line length 10. (7/10 = 0.70, not 7 or 70.)'};
-   else feedback.L={cls:'no',html:'Not quite. W<sub>L</sub> = (42 − 35)/(42 − 32) = 7/10 = 0.70.'};
+   if(near(v,0.273,0.03)) feedback.L={cls:'no',html:'That is the <b>near</b> arm. The fraction of <b>liquid</b> uses the <b>far</b> (solid-side) arm: (C<sub>α</sub> − C₀) = 43 − 35.'};
+   else if(near(v,0.375,0.03)) feedback.L={cls:'no',html:'You divided one arm by the <b>other</b> arm. The denominator is the <b>whole tie line</b> C<sub>α</sub> − C<sub>L</sub> = 11, not the near arm: 8/11, not 3/8.'};
+   else if(near(v,0.50,0.03)) feedback.L={cls:'no',html:'C₀ is not at the midpoint of the tie line. Use (C<sub>α</sub> − C₀)/(C<sub>α</sub> − C<sub>L</sub>) = 8/11.'};
+   else if(v>1.5) feedback.L={cls:'no',html:'Give a <b>fraction</b> (0–1): divide the arm by the tie-line length 11. (8/11 = 0.727, not 8 or 73.)'};
+   else feedback.L={cls:'no',html:'Not quite. W<sub>L</sub> = (43 − 35)/(43 − 32) = 8/11 = 0.727.'};
  }
  applyStepState('L'); draw(); }
 
-// target 0.30 | distractors 0.70 (far arm), >1.5 (not normalized) | nearest gap 0.40 -> tol 0.03
+// target 0.273 | distractors 0.727 (far arm), >1.5 (not normalized) | nearest gap 0.45 -> tol 0.03
 function checkA(){ const raw=document.getElementById('ansA').value; answers.A=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.A={cls:'no',html:'Enter a number between 0 and 1.'}; applyStepState('A'); return; }
- if(near(v,0.30,0.03)){ solved.A=true; feedback.A={cls:'ok',html:'✓ Correct — (35 − 32)/10 = <b>0.30</b>: 30% solid. And 0.70 + 0.30 = 1. Click Next.'}; }
+ if(near(v,0.273,0.03)){ solved.A=true; feedback.A={cls:'ok',html:'✓ Correct — (35 − 32)/11 = <b>0.273</b>: 27% solid. And 0.727 + 0.273 = 1. Click Next.'}; }
  else { attempts.A++;
-   if(near(v,0.70,0.03)) feedback.A={cls:'no',html:'That is W<sub>L</sub> (the far arm). The fraction of <b>solid</b> uses the <b>near</b> arm: (C₀ − C<sub>L</sub>) = 35 − 32.'};
-   else if(v>1.5) feedback.A={cls:'no',html:'Give a <b>fraction</b> (0–1): divide the arm by the tie-line length 10. (3/10 = 0.30.)'};
-   else feedback.A={cls:'no',html:'Not quite. W<sub>α</sub> = (35 − 32)/10 = 0.30 (or 1 − 0.70).'};
+   if(near(v,0.727,0.03)) feedback.A={cls:'no',html:'That is W<sub>L</sub> (the far arm). The fraction of <b>solid</b> uses the <b>near</b> arm: (C₀ − C<sub>L</sub>) = 35 − 32.'};
+   else if(v>1.5) feedback.A={cls:'no',html:'Give a <b>fraction</b> (0–1): divide the arm by the tie-line length 11. (3/11 = 0.273.)'};
+   else feedback.A={cls:'no',html:'Not quite. W<sub>α</sub> = (35 − 32)/11 = 0.273 (or 1 − 0.727).'};
  }
  applyStepState('A'); draw(); }
 
