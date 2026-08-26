@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="lecture-number" content="2s">
-<meta name="lecture-title" content="The Bond-Energy Curve — Build It, Then Solve It">
-<meta name="lecture-topic" content="Attraction, repulsion, and the equilibrium bond energy of an Na⁺–Cl⁻ pair">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bond-Energy Curve — Build It &amp; Solve It</title>
@@ -76,10 +73,10 @@
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
 
-// ---- self-consistent model: min at r0=0.28 nm, depth -4.50 eV, E_A(r0)=-5.14, E_R(r0)=+0.64 ----
-const A=1.44, n=8, B=2.4285e-5, r0=0.28;
+// ---- self-consistent model: min at r0=0.28 nm, depth -4.60 eV, E_A(r0)=-5.14, E_R(r0)=+0.54 ----
+const A=1.44, n=9.4737, B=3.142211e-6, r0=0.28;
 const EA=r=>-A/r, ER=r=>B/Math.pow(r,n), EN=r=>EA(r)+ER(r);
-const EA0=EA(r0), ER0=ER(r0), EN0=EN(r0);   // -5.14, +0.64, -4.50
+const EA0=EA(r0), ER0=ER(r0), EN0=EN(r0);   // -5.14, +0.54, -4.60
 
 let W=720,H=500, M={l:58,r:16,t:18,b:46};
 const X0=0.20, X1=0.55, Y0=-7.5, Y1=3;
@@ -108,7 +105,7 @@ let attempts={R:0};
 let revealed={R:false};
 let solved={R:false};
 const solText={
- R:'E<sub>R</sub> = E₀ &minus; E<sub>A</sub> = &minus;4.50 &minus; (&minus;5.14) = <b>+0.64 eV</b>. Repulsion is positive because it raises the pair\'s energy.'
+ R:'E<sub>R</sub> = E₀ &minus; E<sub>A</sub> = &minus;4.60 &minus; (&minus;5.14) = <b>+0.54 eV</b>. Repulsion is positive because it raises the pair\'s energy.'
 };
 const stageKey=st=>({4:'R'})[st]||null;
 const stages=[
@@ -148,7 +145,7 @@ const stages=[
      <li><b>E<sub>A</sub></b> attractive energy · <b>E<sub>R</sub></b> repulsive energy · <b>E₀</b> net bond energy (the well depth)</li>
      <li>They are linked by <b>E₀ = E<sub>A</sub> + E<sub>R</sub></b></li>
    </ul>
-   <p>At r₀ = 0.28 nm: E<sub>A</sub> = −1.44/0.28 = <b>−5.14 eV</b>, and the measured bond energy E₀ = <b>−4.50 eV</b>.</p>
+   <p>At r₀ = 0.28 nm: E<sub>A</sub> = −1.44/0.28 = <b>−5.14 eV</b>, and the measured bond energy E₀ = <b>−4.60 eV</b>.</p>
    <p>What is the repulsive energy <b>E<sub>R</sub></b> at r₀?</p>
    <div class="solvebox">
      <label class="sr-only" for="ansR">Repulsive energy E_R at the equilibrium separation, in electron-volts</label>
@@ -158,7 +155,7 @@ const stages=[
      <div id="hintR"></div>
    </div>`},
  {html:`<h3>Part 5 — You've decomposed the bond</h3>
-   <p>On the graph at r₀: read <b style="color:var(--terra)">E<sub>A</sub> = −5.14 eV</b> straight off the red attraction curve, and <b style="color:var(--steel)">E<sub>R</sub> = +0.64 eV</b> is the gap up to the net curve — together they net to <b>E₀ = −4.50 eV</b>. (The 0.28 on the horizontal axis is the separation r, not an energy.)</p>
+   <p>On the graph at r₀: read <b style="color:var(--terra)">E<sub>A</sub> = −5.14 eV</b> straight off the red attraction curve, and <b style="color:var(--steel)">E<sub>R</sub> = +0.54 eV</b> is the gap up to the net curve — together they net to <b>E₀ = −4.60 eV</b>. (The 0.28 on the horizontal axis is the separation r, not an energy.)</p>
    <ul class="defs">
      <li>The well <b>depth</b> = bond energy E₀ → sets the <b>melting temperature</b> (deeper → higher)</li>
      <li>The well <b>curvature</b> at r₀ → sets the <b>stiffness</b> / elastic modulus (sharper → stiffer)</li>
@@ -199,7 +196,7 @@ function draw(){
    ctx.fillStyle=CSS.navy; ctx.beginPath(); ctx.arc(px(r0),py(EN0),5,0,2*Math.PI); ctx.fill();
    ctx.fillStyle=CSS.mut; ctx.font='11px Calibri'; ctx.textAlign='center';
    ctx.fillText('r₀ = 0.28 nm',px(r0),py(0)-6);
-   if(stage<5){ ctx.fillStyle=CSS.navy; ctx.fillText('E₀ = −4.50 eV (well depth)',px(r0)+2,py(EN0)+20); }
+   if(stage<5){ ctx.fillStyle=CSS.navy; ctx.fillText('E₀ = −4.60 eV (well depth)',px(r0)+2,py(EN0)+20); }
  }
  // step 5: animate the read-off — drop from the red point to the y-axis, then grow the E_R bar upward
  if(stage>=5){
@@ -214,7 +211,7 @@ function draw(){
    ctx.beginPath(); ctx.moveTo(px(r0),py(EA0)); ctx.lineTo(xEnd,py(EA0)); ctx.stroke(); ctx.setLineDash([]);
    if(p1>=1){ ctx.fillStyle=CSS.terra; ctx.beginPath(); ctx.moveTo(M.l,py(EA0)); ctx.lineTo(M.l+7,py(EA0)-4); ctx.lineTo(M.l+7,py(EA0)+4); ctx.closePath(); ctx.fill();
      ctx.textAlign='right'; ctx.font='bold 10.5px Calibri'; ctx.fillText('−5.14',M.l-4,py(EA0)+4); }
-   // 2) vertical blue bar growing up from −5.14 to −4.0 (that rise IS E_R)
+   // 2) vertical blue bar growing up from −5.14 to −4.60 (that rise IS E_R)
    if(p2>0){ const yTop=py(EA0)-p2*(py(EA0)-py(EN0));
      ctx.strokeStyle=CSS.steel; ctx.lineWidth=3.5; ctx.beginPath(); ctx.moveTo(px(r0),py(EA0)); ctx.lineTo(px(r0),yTop); ctx.stroke();
      if(p2>=1){ ctx.fillStyle=CSS.steel; ctx.beginPath(); ctx.moveTo(px(r0),py(EN0)); ctx.lineTo(px(r0)-4,py(EN0)+7); ctx.lineTo(px(r0)+4,py(EN0)+7); ctx.closePath(); ctx.fill(); } }
@@ -223,8 +220,8 @@ function draw(){
    ctx.textAlign='left'; ctx.font='11px Calibri'; ctx.fillStyle=CSS.mut; ctx.fillText('at r₀ = 0.28 nm:',tx,py(2.75));
    ctx.font='bold 12.5px Calibri';
    ctx.fillStyle=CSS.terra; ctx.fillText('E_A = −5.14 eV',tx,py(2.05));
-   ctx.fillStyle=CSS.steel; ctx.fillText('E_R = +0.64 eV',tx,py(1.35));
-   ctx.fillStyle=CSS.navy;  ctx.fillText('E₀ = −4.50 eV',tx,py(0.65));
+   ctx.fillStyle=CSS.steel; ctx.fillText('E_R = +0.54 eV',tx,py(1.35));
+   ctx.fillStyle=CSS.navy;  ctx.fillText('E₀ = −4.60 eV',tx,py(0.65));
  }
  // legend
  const lg=document.getElementById('legend'); let s='';
@@ -236,9 +233,9 @@ function draw(){
   'Energy versus separation axes for an Na-Cl ion pair, with no curves drawn yet.',
   'The red dashed attraction curve E_A = minus A over r falls steeply and more negative as the ions approach; attraction alone has no minimum.',
   'The blue dashed repulsion curve E_R = plus B over r to the n rises sharply and positive at short separation; added to the attraction curve.',
-  'The net energy curve E_N is added in navy and now shows an energy well; its minimum sits at the equilibrium separation r0 = 0.28 nm, depth minus 4.50 eV.',
-  'The energy well with its minimum marked at r0 = 0.28 nm and well depth E0 = minus 4.50 eV.',
-  'At r0 the read-off shows E_A = minus 5.14 eV on the attraction curve, the repulsion E_R = plus 0.64 eV as the gap up to the net curve, netting to E0 = minus 4.50 eV.'
+  'The net energy curve E_N is added in navy and now shows an energy well; its minimum sits at the equilibrium separation r0 = 0.28 nm, depth minus 4.60 eV.',
+  'The energy well with its minimum marked at r0 = 0.28 nm and well depth E0 = minus 4.60 eV.',
+  'At r0 the read-off shows E_A = minus 5.14 eV on the attraction curve, the repulsion E_R = plus 0.54 eV as the gap up to the net curve, netting to E0 = minus 4.60 eV.'
  ];
  cv.setAttribute('aria-label', aria[Math.min(stage,aria.length-1)]);
 }
@@ -333,21 +330,21 @@ function checkAnswer(){
  const raw=document.getElementById('ansR').value; answers.R=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.R={cls:'no',html:'Enter a number (in eV) for E_R.'}; applyStepState('R'); return; }
  const near=(t)=>Math.abs(v-t)<0.12;
- if(near(0.64)){
+ if(near(0.54)){
    solved.R=true;
-   feedback.R={cls:'ok',html:'✓ Correct — E_R = E₀ − E_A = −4.50 − (−5.14) = <b>+0.64 eV</b>. Repulsion is positive (it raises energy). See the curve: E_R is the gap from E_A up to the net minimum. Click <b>Reveal ▸</b>.'};
+   feedback.R={cls:'ok',html:'✓ Correct — E_R = E₀ − E_A = −4.60 − (−5.14) = <b>+0.54 eV</b>. Repulsion is positive (it raises energy). See the curve: E_R is the gap from E_A up to the net minimum. Click <b>Reveal ▸</b>.'};
  } else {
    attempts.R++;
-   if(near(-0.64)){
+   if(near(-0.54)){
      feedback.R={cls:'no',html:'Right size, wrong sign. Repulsion <b>raises</b> the energy, so E_R must be <b>positive</b>.'};
    } else if(near(-5.14)||near(5.14)){
      feedback.R={cls:'no',html:'That is E<sub>A</sub>, the attractive term. You need E<sub>R</sub> = E₀ − E<sub>A</sub>.'};
-   } else if(near(-9.64)){
+   } else if(near(-9.74)){
      feedback.R={cls:'no',html:'You <b>added</b> E<sub>A</sub>. Rearrange E₀ = E<sub>A</sub> + E<sub>R</sub> → E<sub>R</sub> = E₀ <b>−</b> E<sub>A</sub>.'};
-   } else if(near(-4.50)){
+   } else if(near(-4.60)){
      feedback.R={cls:'no',html:'That is the net bond energy E₀, not the repulsive part. Subtract E<sub>A</sub> from it.'};
    } else {
-     feedback.R={cls:'no',html:'Not quite. Use E₀ = E<sub>A</sub> + E<sub>R</sub>, so E<sub>R</sub> = E₀ − E<sub>A</sub> = −4.50 − (−5.14).'};
+     feedback.R={cls:'no',html:'Not quite. Use E₀ = E<sub>A</sub> + E<sub>R</sub>, so E<sub>R</sub> = E₀ − E<sub>A</sub> = −4.60 − (−5.14).'};
    }
  }
  applyStepState('R'); draw();
