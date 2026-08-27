@@ -76,12 +76,12 @@ EXCLUDED_FILES = {OUTPUT_NAME.lower()}
 # say "lecture" before the digits, or every file with a number in its name
 # would be swept in.
 FILENAME_PATTERN = re.compile(
-    r"^(?:lecture|lect|lec|L)[_\-\s]*(\d{1,3})\s*([A-Za-z]?)\s*(?:[_\-\s]+(?P<slug>.*))?$",
+    r"^(?:lecture|lect|lec|L)[_\-\s]*(\d{1,3})\s*([A-Za-z]{0,2})\s*(?:[_\-\s]+(?P<slug>.*))?$",
     re.IGNORECASE,
 )
 
 # Contents of a lecture-number meta tag: "7", "07", "7a", "7 a".
-META_NUMBER_PATTERN = re.compile(r"^\s*(\d{1,3})\s*([A-Za-z]?)\s*$")
+META_NUMBER_PATTERN = re.compile(r"^\s*(\d{1,3})\s*([A-Za-z]{0,2})\s*$")
 
 
 # --------------------------------------------------------------------------
