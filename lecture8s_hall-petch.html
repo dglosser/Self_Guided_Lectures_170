@@ -70,9 +70,9 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const CSS={navy:'#1F3864',terra:'#B85042',teal:'#1F7A63',amber:'#E8890C',purp:'#6D4C7D',steel:'#2E5496',slate:'#3F4A5A',mut:'#6B7480',line:'#C7CFDA',light:'#F1F4F8',green:'#2C6E49'};
 
 // data: (d^-1/2 , sigma_y)
-const A=[5,150], B=[10,250];       // coarse, fine
-const KY=20, S0=50;                // slope, intercept
-const PRED_X=20, PRED_S=450;       // d=0.0025mm -> d^-1/2=20 -> 450 MPa
+const A=[5,150], B=[10,200];       // coarse, fine
+const KY=10, S0=100;                // slope, intercept
+const PRED_X=20, PRED_S=300;       // d=0.0025mm -> d^-1/2=20 -> 300 MPa
 
 // ---- module-level state (persists across re-renders) ----
 let stage=0;
@@ -82,10 +82,10 @@ let attempts={K:0,S:0,X:0,P:0};
 let revealed={K:false,S:false,X:false,P:false};
 let solved={K:false,S:false,X:false,P:false};
 const solText={
- K:'k<sub>y</sub> = Δσ<sub>y</sub> / Δ(d<sup>−1/2</sup>) = (250 − 150) / (10 − 5) = 100/5 = <b>20 MPa·mm<sup>1/2</sup></b>.',
- S:'σ<sub>0</sub> = σ<sub>y</sub> − k<sub>y</sub>·d<sup>−1/2</sup> = 150 − (20)(5) = 150 − 100 = <b>50 MPa</b>.',
+ K:'k<sub>y</sub> = Δσ<sub>y</sub> / Δ(d<sup>−1/2</sup>) = (200 − 150) / (10 − 5) = 50/5 = <b>10 MPa·mm<sup>1/2</sup></b>.',
+ S:'σ<sub>0</sub> = σ<sub>y</sub> − k<sub>y</sub>·d<sup>−1/2</sup> = 150 − (10)(5) = 150 − 50 = <b>100 MPa</b>.',
  X:'d<sup>−1/2</sup> = 1/&radic;d = 1/&radic;0.0025 = 1/0.05 = <b>20 mm<sup>−1/2</sup></b>.',
- P:'σ<sub>y</sub> = σ<sub>0</sub> + k<sub>y</sub>·d<sup>−1/2</sup> = 50 + (20)(20) = <b>450 MPa</b>.'
+ P:'σ<sub>y</sub> = σ<sub>0</sub> + k<sub>y</sub>·d<sup>−1/2</sup> = 100 + (10)(20) = <b>300 MPa</b>.'
 };
 const stageKey=st=>({2:'K',3:'S',4:'X',5:'P'})[st]||null;
 
@@ -105,18 +105,18 @@ const stages=[
    </ul>
    <table class="dh"><tr><th>grains</th><th>d (mm)</th><th>d<sup>−1/2</sup></th><th>σ<sub>y</sub> (MPa)</th></tr>
      <tr><td>coarse</td><td>0.04</td><td>5</td><td>150</td></tr>
-     <tr><td>fine</td><td>0.01</td><td>10</td><td>250</td></tr></table>
+     <tr><td>fine</td><td>0.01</td><td>10</td><td>200</td></tr></table>
    <p>These two points are plotted at left. σ<sub>0</sub> and k<sub>y</sub> are material constants we'll extract.</p>`},
  {html:`<h3>Find k<sub>y</sub> — the slope</h3>
    <p>The slope is the rise in σ<sub>y</sub> divided by the run in d<sup>−1/2</sup> between the two points (drawn at left).</p>
-   <div class="eq">k<sub>y</sub> = Δσ<sub>y</sub> / Δ(d<sup>−1/2</sup>) = (250 − 150) / (10 − 5)</div>
+   <div class="eq">k<sub>y</sub> = Δσ<sub>y</sub> / Δ(d<sup>−1/2</sup>) = (200 − 150) / (10 − 5)</div>
    <label class="sr-only" for="ansK">Slope k_y, in megapascals times square-root millimeters</label>
    <div class="answer-row"><span class="unit">k<sub>y</sub> =</span><input type="number" id="ansK" step="1" placeholder="?"> <span class="unit">MPa·mm<sup>1/2</sup></span><button id="checkK">Check</button></div>
    <div class="feedback" id="fbK" aria-live="polite"></div>
    <div id="hintK"></div>`},
  {html:`<h3>Find σ<sub>0</sub> — the intercept</h3>
    <p>Rearrange the model and plug in either point (use the coarse one: d<sup>−1/2</sup> = 5, σ<sub>y</sub> = 150).</p>
-   <div class="eq">σ<sub>0</sub> = σ<sub>y</sub> − k<sub>y</sub> · d<sup>−1/2</sup> = 150 − (20)(5)</div>
+   <div class="eq">σ<sub>0</sub> = σ<sub>y</sub> − k<sub>y</sub> · d<sup>−1/2</sup> = 150 − (10)(5)</div>
    <label class="sr-only" for="ansS">Intercept sigma_0, in megapascals</label>
    <div class="answer-row"><span class="unit">σ<sub>0</sub> =</span><input type="number" id="ansS" step="1" placeholder="?"> <span class="unit">MPa</span><button id="checkS">Check</button></div>
    <div class="feedback" id="fbS" aria-live="polite"></div>
@@ -130,16 +130,16 @@ const stages=[
    <div class="feedback" id="fbX" aria-live="polite"></div>
    <div id="hintX"></div>`},
  {html:`<h3>Predict, part 2 — the yield strength</h3>
-   <p>Now put d<sup>−1/2</sup> = 20 into the fitted line with your constants σ<sub>0</sub> = 50 and k<sub>y</sub> = 20.</p>
-   <div class="eq">σ<sub>y</sub> = σ<sub>0</sub> + k<sub>y</sub> · d<sup>−1/2</sup> = 50 + (20)(20)</div>
+   <p>Now put d<sup>−1/2</sup> = 20 into the fitted line with your constants σ<sub>0</sub> = 100 and k<sub>y</sub> = 10.</p>
+   <div class="eq">σ<sub>y</sub> = σ<sub>0</sub> + k<sub>y</sub> · d<sup>−1/2</sup> = 100 + (10)(20)</div>
    <label class="sr-only" for="ansP">Predicted yield strength sigma_y, in megapascals</label>
    <div class="answer-row"><span class="unit">σ<sub>y</sub> =</span><input type="number" id="ansP" step="5" placeholder="?"> <span class="unit">MPa</span><button id="checkP">Check</button></div>
    <div class="feedback" id="fbP" aria-live="polite"></div>
    <div id="hintP"></div>`},
  {html:`<h3>What Hall–Petch buys you</h3>
    <ul class="defs">
-     <li>Refining the grains from 0.04 mm to 0.0025 mm lifts the yield strength from <b>150 to 450 MPa</b> — tripled, with no change in composition.</li>
-     <li><b>σ<sub>0</sub> = 50 MPa</b> and <b>k<sub>y</sub> = 20 MPa·mm<sup>1/2</sup></b> are constants of this material; measure them once and you can predict σ<sub>y</sub> for any grain size.</li>
+     <li>Refining the grains from 0.04 mm to 0.0025 mm lifts the yield strength from <b>150 to 300 MPa</b>, doubled, with no change in composition.</li>
+     <li><b>σ<sub>0</sub> = 100 MPa</b> and <b>k<sub>y</sub> = 10 MPa·mm<sup>1/2</sup></b> are constants of this material; measure them once and you can predict σ<sub>y</sub> for any grain size.</li>
      <li>Grain refinement is the one strengthening method that raises strength <b>and</b> toughness at once — which is why it's so widely used.</li>
    </ul>`}
 ];
@@ -151,7 +151,7 @@ const px=x=>PL+(x/XMAX)*(CW-PL-PR);
 const py=s=>CH-PB-(s/YMAX)*(CH-PT-PB);
 const ARIA={
  grains:'Illustration comparing a coarse-grained metal (a few large grains with few boundaries) with a fine-grained metal (many small grains with many boundaries); more boundaries block dislocations and raise the yield strength.',
- plot:'Scatter plot of yield strength sigma_y in megapascals versus d to the minus one half in inverse square-root millimeters. Two measured points are shown (coarse at 5, 150 and fine at 10, 250). A fitted straight line, its intercept, and the predicted point for a new sample are added as you work through the steps.'
+ plot:'Scatter plot of yield strength sigma_y in megapascals versus d to the minus one half in inverse square-root millimeters. Two measured points are shown (coarse at 5, 150 and fine at 10, 200). A fitted straight line, its intercept, and the predicted point for a new sample are added as you work through the steps.'
 };
 
 function gbox(ox,oy,w,h,n,seed){
@@ -204,7 +204,7 @@ function drawPlot(){
    ctx.beginPath(); ctx.moveTo(px(A[0]),py(A[1])); ctx.lineTo(px(B[0]),py(A[1])); ctx.lineTo(px(B[0]),py(B[1])); ctx.stroke(); ctx.setLineDash([]);
    ctx.fillStyle=CSS.amber; ctx.font='bold 14px Calibri'; ctx.textAlign='center';
    ctx.fillText('Δ(d^−1/2) = 5',(px(A[0])+px(B[0]))/2,py(A[1])+24);
-   ctx.textAlign='left'; ctx.fillText('Δσ_y = 100 MPa',px(B[0])+12,(py(A[1])+py(B[1]))/2);
+   ctx.textAlign='left'; ctx.fillText('Δσ_y = 50 MPa',px(B[0])+12,(py(A[1])+py(B[1]))/2);
  }
  // data points (given data)
  if(stage>=1){ [ [A,'coarse'],[B,'fine'] ].forEach(([p,lab])=>{
@@ -215,7 +215,7 @@ function drawPlot(){
    ctx.fillStyle=CSS.purp; ctx.font='bold 14px Calibri'; ctx.textAlign='center'; ctx.fillText('new sample: d^−1/2 = 20',px(PRED_X),CH-PB+38); }
  // predicted point + value withheld until the σ_y step is solved
  if(solved.P){ ctx.fillStyle=CSS.purp; ctx.beginPath(); ctx.arc(px(PRED_X),py(PRED_S),7,0,2*Math.PI); ctx.fill();
-   ctx.fillStyle=CSS.purp; ctx.font='bold 15px Calibri'; ctx.textAlign='right'; ctx.fillText('predicted σ_y = 450',px(PRED_X)-12,py(PRED_S)+5); }
+   ctx.fillStyle=CSS.purp; ctx.font='bold 15px Calibri'; ctx.textAlign='right'; ctx.fillText('predicted σ_y = 300',px(PRED_X)-12,py(PRED_S)+5); }
 }
 
 function updateCaption(){
@@ -278,21 +278,21 @@ const near=(v,t,tol)=>Math.abs(v-t)<tol;
 
 function checkK(){ const raw=document.getElementById('ansK').value; answers.K=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.K={cls:'no',html:'Enter a number.'}; applyStepState('K'); return; }
- if(near(v,20,1.5)){ solved.K=true; feedback.K={cls:'ok',html:'✓ Correct — (250−150)/(10−5) = 100/5 = <b>20 MPa·mm^(1/2)</b>. Click Next.'}; }
+ if(near(v,10,1)){ solved.K=true; feedback.K={cls:'ok',html:'✓ Correct — (200−150)/(10−5) = 50/5 = <b>10 MPa·mm^(1/2)</b>. Click Next.'}; }
  else { attempts.K++;
-   if(near(v,0.05,0.02)) feedback.K={cls:'no',html:'You inverted it. Slope = rise/run = Δσ_y / Δ(d^−1/2), not the other way around.'};
-   else if(near(v,30,2)) feedback.K={cls:'no',html:'That\'s σ_y/d^−1/2 at one point. Slope uses the <b>change</b> between the two points.'};
-   else feedback.K={cls:'no',html:'Not quite. k_y = (250−150)/(10−5) = 20.'};
+   if(near(v,0.1,0.05)) feedback.K={cls:'no',html:'You inverted it. Slope = rise/run = Δσ_y / Δ(d^−1/2), not the other way around.'};
+   else if(near(v,20,2)||near(v,30,2)) feedback.K={cls:'no',html:'That\'s σ_y/d^−1/2 at one point. Slope uses the <b>change</b> between the two points.'};
+   else feedback.K={cls:'no',html:'Not quite. k_y = (200−150)/(10−5) = 10.'};
  }
  applyStepState('K'); draw(); }
 
 function checkS(){ const raw=document.getElementById('ansS').value; answers.S=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.S={cls:'no',html:'Enter a number (MPa).'}; applyStepState('S'); return; }
- if(near(v,50,6)){ solved.S=true; feedback.S={cls:'ok',html:'✓ Correct — 150 − (20)(5) = <b>50 MPa</b>. Click Next.'}; }
+ if(near(v,100,6)){ solved.S=true; feedback.S={cls:'ok',html:'✓ Correct — 150 − (10)(5) = <b>100 MPa</b>. Click Next.'}; }
  else { attempts.S++;
-   if(near(v,250,10)) feedback.S={cls:'no',html:'You added instead of subtracting. σ_0 = σ_y − k_y·d^−1/2 = 150 − 100.'};
-   else if(near(v,150,8)||near(v,250,8)) feedback.S={cls:'no',html:'That\'s a measured σ_y. σ_0 is the intercept — subtract the k_y·d^−1/2 term.'};
-   else feedback.S={cls:'no',html:'Not quite. σ_0 = 150 − (20)(5) = 50 MPa.'};
+   if(near(v,200,10)) feedback.S={cls:'no',html:'You added instead of subtracting. σ_0 = σ_y − k_y·d^−1/2 = 150 − 50.'};
+   else if(near(v,150,8)||near(v,200,8)) feedback.S={cls:'no',html:'That\'s a measured σ_y. σ_0 is the intercept — subtract the k_y·d^−1/2 term.'};
+   else feedback.S={cls:'no',html:'Not quite. σ_0 = 150 − (10)(5) = 100 MPa.'};
  }
  applyStepState('S'); draw(); }
 
@@ -308,10 +308,10 @@ function checkX(){ const raw=document.getElementById('ansX').value; answers.X=ra
 
 function checkP(){ const raw=document.getElementById('ansP').value; answers.P=raw; const v=parseFloat(raw);
  if(isNaN(v)){ feedback.P={cls:'no',html:'Enter a number (MPa).'}; applyStepState('P'); return; }
- if(near(v,450,12)){ solved.P=true; feedback.P={cls:'ok',html:'✓ Correct — 50 + (20)(20) = <b>450 MPa</b>. Click Next.'}; }
+ if(near(v,300,12)){ solved.P=true; feedback.P={cls:'ok',html:'✓ Correct — 100 + (10)(20) = <b>300 MPa</b>. Click Next.'}; }
  else { attempts.P++;
-   if(near(v,400,12)) feedback.P={cls:'no',html:'You left out σ_0. Add the intercept: 50 + (20)(20) = 450.'};
-   else feedback.P={cls:'no',html:'Not quite. σ_y = 50 + (20)(20) = 450 MPa.'};
+   if(near(v,200,12)) feedback.P={cls:'no',html:'You left out σ_0. Add the intercept: 100 + (10)(20) = 300.'};
+   else feedback.P={cls:'no',html:'Not quite. σ_y = 100 + (10)(20) = 300 MPa.'};
  }
  applyStepState('P'); draw(); }
 
