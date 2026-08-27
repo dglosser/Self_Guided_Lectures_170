@@ -131,14 +131,7 @@ If this repo is (or becomes) a GitHub Pages site:
 
 ---
 
-## Note: this repo lives inside OneDrive
 
-The working copy is under `OneDrive\Documents\GitHub\`. That works, but there is
-a known failure mode: OneDrive and git can both touch `.git/` at the same time,
-which produces lock-file errors (`Unable to create '.git/index.lock'`) or a
-corrupted index — most often during a `git pull` while sync is active.
-
-Two mitigations, neither of them applied here:
 
 - Exclude the `.git` folder from OneDrive sync, or
 - Move the repo outside the OneDrive tree. A git repo already has GitHub as its
